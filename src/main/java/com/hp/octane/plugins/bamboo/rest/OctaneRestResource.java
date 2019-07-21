@@ -22,6 +22,7 @@ import com.atlassian.bamboo.security.BambooPermissionManager;
 import com.atlassian.bamboo.security.acegi.acls.BambooPermission;
 import com.atlassian.bamboo.user.BambooUser;
 import com.atlassian.bamboo.user.BambooUserManager;
+import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
 import com.atlassian.sal.api.component.ComponentLocator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.OctaneConfiguration;
@@ -37,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLHandshakeException;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
@@ -46,66 +49,68 @@ import java.util.List;
 import java.util.UUID;
 
 
-@Provider
-@Path("/testconnection")
+@Consumes({MediaType.APPLICATION_JSON})
+@Produces({MediaType.APPLICATION_JSON})
+@Path("/test")
+@Scanned
 public class OctaneRestResource {
     private static final Logger log = LoggerFactory.getLogger(OctaneRestResource.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
 
-    @Path("test")
+   /* @Path("test")
     @GET
     public Response test() throws IOException {
         return Response.ok().build();
-    }
+    }*/
 
     @POST
+    @Path("/testconnection")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response testConfiguration(String body) throws IOException {
-        OctaneConnectionDTO dto = objectMapper.readValue(body, OctaneConnectionDTO.class);
-        return Response.ok(tryToConnect(dto)).build();
+    public Response testConfiguration(@Context HttpServletRequest request, OctaneConnection model) throws IOException {
+        return tryToConnect(model);
     }
 
-    private String tryToConnect(OctaneConnectionDTO dto) {
+    private Response tryToConnect(OctaneConnection dto) {
         try {
-            String octaneUrl = dto.getOctaneUrl();
-            String accessKey = dto.getAccessKey();
-            String apiSecret = dto.getApiSecret();
-            String userName = dto.getUserName();
-            if (octaneUrl == null || octaneUrl.isEmpty()) {
-                return "Location URL is required";
+            String location = dto.getLocation();
+            String clientId = dto.getClientId();
+            String clientSecret = dto.getClientSecret();
+            String bambooUser = dto.getBambooUser();
+            if (location == null || location.isEmpty()) {
+                return Response.ok().entity("Location URL is required").build();
             }
-            if (accessKey == null || accessKey.isEmpty()) {
-                return "Client ID is required";
-            }
-
-            if (apiSecret == null || apiSecret.isEmpty()) {
-                return "Client Secret is required";
+            if (clientId == null || clientId.isEmpty()) {
+                return Response.ok().entity("Client ID is required").build();
             }
 
-            if (userName == null || userName.isEmpty()) {
-                return "Bamboo user is required";
-            }
-            if (!IsUserExist(userName)) {
-                return "Bamboo user does not exist";
+            if (clientSecret == null || clientSecret.isEmpty()) {
+                return Response.ok().entity("Client Secret is required").build();
             }
 
-            if (!hasPermission(userName)) {
-                return "Bamboo user doesn't have enough permissions";
+            if (bambooUser == null || bambooUser.isEmpty()) {
+                return Response.ok().entity("Bamboo user is required").build();
             }
-            MqmProject mqmProject = Utils.parseUiLocation(octaneUrl);
+            if (!IsUserExist(bambooUser)) {
+                return Response.ok().entity("Bamboo user does not exist").build();
+            }
+
+            if (!hasPermission(bambooUser)) {
+                return Response.ok().entity("Bamboo user doesn't have enough permissions").build();
+            }
+            MqmProject mqmProject = Utils.parseUiLocation(location);
             if (mqmProject.hasError()) {
-                return mqmProject.getErrorMsg();
+                return Response.ok().entity(mqmProject.getErrorMsg()).build();
             }
             OctaneConfiguration testedOctaneConfiguration = new OctaneConfiguration(UUID.randomUUID().toString(),
                     mqmProject.getLocation(),
                     mqmProject.getSharedSpace());
-            testedOctaneConfiguration.setClient(accessKey);
-            if (ConfigureOctaneAction.PLAIN_PASSWORD.equals(apiSecret)) {
+            testedOctaneConfiguration.setClient(clientId);
+            if (ConfigureOctaneAction.PLAIN_PASSWORD.equals(clientSecret)) {
                 testedOctaneConfiguration.setSecret(ConfigureOctaneAction.readApiSecretFromSettings());
             } else {
-                testedOctaneConfiguration.setSecret(apiSecret);
+                testedOctaneConfiguration.setSecret(clientSecret);
             }
             OctaneResponse result;
 
@@ -116,23 +121,23 @@ public class OctaneRestResource {
                     BambooPluginServices.class);
 
             if (result.getStatus() == HttpStatus.SC_OK) {
-                return "Success";
+                return Response.ok().entity("Success").build();
             } else if (result.getStatus() == HttpStatus.SC_UNAUTHORIZED) {
-                return "You are unauthorized";
+                return Response.ok().entity("You are unauthorized").build();
             } else if (result.getStatus() == HttpStatus.SC_FORBIDDEN) {
-                return "Connection Forbidden";
+                return Response.ok().entity("Connection Forbidden").build();
 
             } else if (result.getStatus() == HttpStatus.SC_NOT_FOUND) {
-                return "URL not found";
+                return Response.ok().entity("URL not found").build();
             }
-            return "Error validating octane config";
+            return Response.ok().entity("Error validating octane config").build();
 
         } catch (SSLHandshakeException e) {
             log.error("Exception at tryToConnect", e);
-            return e.getMessage();
+            return Response.ok().entity(e.getMessage()).build();
         } catch (Exception e) {
             log.error("Exception at tryToConnect", e);
-            return "Error validating octane config";
+            return Response.ok().entity("Error validating octane config").build();
         }
     }
 

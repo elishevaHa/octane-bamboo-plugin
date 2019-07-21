@@ -71,7 +71,7 @@ public class ConfigureOctaneAction extends BambooActionSupport {
         settings.put(OctaneConfigurationKeys.IMPERSONATION_USER, userName);
         addActionMessage("Configuration updated successfully");
         //todo should be changed for multi shared space
-        Utils.cud(octaneUrl, uuid, accessKey, apiSecret);
+        Utils.cud("CREATE",octaneUrl, uuid, accessKey, apiSecret);
         return SUCCESS;
     }
 

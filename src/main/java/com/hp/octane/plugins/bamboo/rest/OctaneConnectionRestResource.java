@@ -17,136 +17,148 @@
 package com.hp.octane.plugins.bamboo.rest;
 
 
-import com.atlassian.sal.api.pluginsettings.PluginSettings;
+import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
+import com.atlassian.sal.api.component.ComponentLocator;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
+import com.atlassian.sal.api.user.UserManager;
+import com.atlassian.sal.api.user.UserProfile;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hp.octane.integrations.dto.DTOFactory;
-import com.hp.octane.plugins.bamboo.api.OctaneConfigurationKeys;
-import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
-import java.io.IOException;
 import java.util.UUID;
 
-import static com.opensymphony.xwork2.Action.SUCCESS;
-
-@Provider
-@Path("/connection")
+@Consumes({MediaType.APPLICATION_JSON})
+@Produces({MediaType.APPLICATION_JSON})
+@Path("/")
+@Scanned
 public class OctaneConnectionRestResource {
 
-	private final PluginSettingsFactory settingsFactory;
-	private static final Logger log = LoggerFactory.getLogger(OctaneConnectionRestResource.class);
-	private static final ObjectMapper objectMapper = new ObjectMapper();
-	private String octaneUrl = "";
-	private String accessKey = "";
-	private String apiSecret = "";
-	private String userName = "";
-	private String uuid = "";
+    private final OctaneConnectionManager octaneConnectionManager;
+    private static final Logger log = LoggerFactory.getLogger(OctaneConnectionRestResource.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private String location = "";
+    private String clientId = "";
+    private String clientSecret = "";
+    private String bambooUser = "";
+    private String uuid = "";
+    private UserManager userManager;
 
-	@POST
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response connectToOctane(String body) throws IOException {
-		OctaneConnectionDTO dto = objectMapper.readValue(body, OctaneConnectionDTO.class);
-		String result = doSave(dto);
-		return Response.ok(result).build();
-	}
+    public OctaneConnectionRestResource(PluginSettingsFactory settingsFactory) {
+        octaneConnectionManager = new OctaneConnectionManager(settingsFactory);
+    }
 
-	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response getConnectionDetails(String body) throws IOException {
-		String json = DTOFactory.getInstance().dtoToJson(new BambooPluginServices().getServerInfo());
-		return Response.ok(json).build();
-	}
+    private UserManager getUserManager() {
+        if (userManager == null) {
+            this.userManager = ComponentLocator.getComponent(UserManager.class);
+        }
+        return userManager;
+    }
 
-	public OctaneConnectionRestResource(PluginSettingsFactory settingsFactory) {
-		this.settingsFactory = settingsFactory;
-		readData();
-	}
+    private boolean hasPermissions(HttpServletRequest request) {
+        UserProfile username = getUserManager().getRemoteUser(request);
+        return (username != null && getUserManager().isSystemAdmin(username.getUserKey()));
+    }
 
-	public String doSave(OctaneConnectionDTO dto) {
-		octaneUrl = dto.getOctaneUrl();
-		accessKey = dto.getAccessKey();
-		apiSecret = dto.getApiSecret();
-		userName = dto.getUserName();
-		log.info("save configuration");
-		PluginSettings settings = settingsFactory.createGlobalSettings();
-		settings.put(OctaneConfigurationKeys.OCTANE_URL, octaneUrl);
-		settings.put(OctaneConfigurationKeys.ACCESS_KEY, accessKey);
-		settings.put(OctaneConfigurationKeys.API_SECRET, apiSecret);
-		settings.put(OctaneConfigurationKeys.IMPERSONATION_USER, userName);
-		Utils.cud(octaneUrl, uuid, accessKey, apiSecret);
-		return SUCCESS;
-	}
 
-	private void readData() {
-		PluginSettings settings = settingsFactory.createGlobalSettings();
-		if (settings.get(OctaneConfigurationKeys.UUID) != null) {
-			uuid = String.valueOf(settings.get(OctaneConfigurationKeys.UUID));
-		} else {
-			// generate new UUID
-			uuid = UUID.randomUUID().toString();
-			settings.put(OctaneConfigurationKeys.UUID, uuid);
-		}
-		if (settings.get(OctaneConfigurationKeys.OCTANE_URL) != null) {
-			octaneUrl = String.valueOf(settings.get(OctaneConfigurationKeys.OCTANE_URL));
-		}
+    @PUT
+    @Path("/space-config/self")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response updateSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
+        if (!hasPermissions(request)) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        log.info("save configuration");
+        Utils.cud("UPDATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());
+        octaneConnectionManager.updateConfiguration(model);
+        return Response.ok().build();
+    }
 
-		if (settings.get(OctaneConfigurationKeys.ACCESS_KEY) != null) {
-			accessKey = String.valueOf(settings.get(OctaneConfigurationKeys.ACCESS_KEY));
-		}
-		if (settings.get(OctaneConfigurationKeys.API_SECRET) != null) {
-			apiSecret = String.valueOf(settings.get(OctaneConfigurationKeys.API_SECRET));
-		}
-		if (settings.get(OctaneConfigurationKeys.IMPERSONATION_USER) != null) {
-			userName = String.valueOf(settings.get(OctaneConfigurationKeys.IMPERSONATION_USER));
-		}
-	}
+    @POST
+    @Path("/space-config/self")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response addSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
+        if (!hasPermissions(request)) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        log.info("save configuration");
+        model.setId(UUID.randomUUID().toString());
+        try {
+            Utils.cud("CREATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());
+            octaneConnectionManager.addConfiguration(model);
+        }catch (Exception e)
+        {
+            Response.status(404).entity(e.getMessage()).build();
+        }
+        return Response.ok().build();
+    }
 
-	public String getUserName() {
-		return userName;
-	}
 
-	public void setUserName(String username) {
-		userName = username;
-	}
+    @DELETE
+    @Path("/space-config/self/{id}")
+    public Response deleteConnection(@Context HttpServletRequest request, @PathParam("id") String id) {
+        try {
+            Utils.cud("DELETE", null, id, null, null);
+            octaneConnectionManager.deleteConfiguration(id);
+        } catch (Exception e) {
+            Response.status(Response.Status.NOT_FOUND).entity("configuration not found").build();
+        }
+        return Response.ok().build();
+    }
 
-	public String getOctaneUrl() {
-		return octaneUrl;
-	}
+    @GET
+    @Path("/space-config/all")
+    public Response readAllData(@Context HttpServletRequest request) {
+        return Response.ok(octaneConnectionManager.getConnectionsList()).build();
+    }
 
-	public void setOctaneUrl(String octaneUrl) {
-		this.octaneUrl = octaneUrl;
-	}
 
-	public String getAccessKey() {
-		return accessKey;
-	}
+    public String getBambooUser() {
+        return bambooUser;
+    }
 
-	public void setAccessKey(String accessKey) {
-		this.accessKey = accessKey;
-	}
+    public void setBambooUser(String username) {
+        bambooUser = username;
+    }
 
-	public String getApiSecret() {
-		return apiSecret;
-	}
+    public String getLocation() {
+        return location;
+    }
 
-	public void setApiSecret(String apiSecret) {
-		this.apiSecret = apiSecret;
-	}
+    public void setLocation(String location) {
+        this.location = location;
+    }
 
-	public String getUuid() {
-		return uuid;
-	}
+    public String getClientId() {
+        return clientId;
+    }
 
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
-	}
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
 
 }

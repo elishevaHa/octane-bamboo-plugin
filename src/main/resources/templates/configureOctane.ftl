@@ -21,9 +21,9 @@
         xhttp.open("POST", "${req.contextPath}/rest/octane/1.0/testconnection", true);
         xhttp.setRequestHeader('content-type', 'application/json');
         xhttp.send(JSON.stringify({
-            octaneUrl: document.getElementById("octaneConfigurationForm_octaneUrl").value,
-            accessKey: document.getElementById("octaneConfigurationForm_accessKey").value,
-            apiSecret: document.getElementById("octaneConfigurationForm_apiSecret").value,
+            location: document.getElementById("octaneConfigurationForm_octaneUrl").value,
+            clientId: document.getElementById("octaneConfigurationForm_accessKey").value,
+            clientSecret: document.getElementById("octaneConfigurationForm_apiSecret").value,
             userName: document.getElementById("octaneConfigurationForm_userName").value
         }));
     }
@@ -34,8 +34,8 @@
 id="octaneConfigurationForm"
 submitLabelKey='global.buttons.update' ]
     [@ui.bambooSection title="ALM Octane Server Configuration"]
-        [@ww.textfield name='octaneUrl' label='Location' required='true' description='Location of the ALM Octane application' /]
-        [@ww.textfield name="accessKey" label='Client ID'  required='true' description='Client ID used for logging into the ALM Octane server' /]
+        [@ww.textfield name='location' label='Location' required='true' description='Location of the ALM Octane application' /]
+        [@ww.textfield name="clientId" label='Client ID'  required='true' description='Client ID used for logging into the ALM Octane server' /]
     [#--fake unvisible fields- in order to ignore autocomplete
     https://stackoverflow.com/questions/12374442/chrome-ignores-autocomplete-off
     https://stackoverflow.com/questions/18306052/autocomplete-off-not-working-on-google-chrome-browser
@@ -54,7 +54,7 @@ submitLabelKey='global.buttons.update' ]
         <div id="fieldArea_octaneConfigurationForm_fakeuserName1" class="field-group" style="display: none">
             <input type="text" name="fakeuserName1" value="" id="octaneConfigurationForm_fakeuserName1" class="text ">
         </div>
-        [@ww.password name="apiSecret" label='Client secret' required='true' description='Client secret used for logging into the ALM Octane server'/]
+        [@ww.password name="clientSecret" label='Client secret' required='true' description='Client secret used for logging into the ALM Octane server'/]
         [@ww.textfield name="userName" label='Bamboo user' required='true' description='The account that will run jobs for ALM Octane (must have build plan permissions).'/]
     [/@ui.bambooSection]
 [/@ww.form]

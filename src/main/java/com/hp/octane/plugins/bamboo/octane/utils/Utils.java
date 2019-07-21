@@ -7,6 +7,7 @@ import com.atlassian.sal.api.component.ComponentLocator;
 import com.hp.octane.integrations.OctaneClient;
 import com.hp.octane.integrations.OctaneConfiguration;
 import com.hp.octane.integrations.OctaneSDK;
+import com.hp.octane.integrations.exceptions.ConfigurationException;
 import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
 import com.hp.octane.plugins.bamboo.octane.MqmProject;
 import org.apache.http.NameValuePair;
@@ -55,24 +56,38 @@ public class Utils {
         }
     }
 
-    public static void cud(String octaneUrl, String uuid, String accessKey, String apiSecret) {
+    public static void cud(String action, String octaneUrl, String uuid, String accessKey, String apiSecret) {
         List<OctaneClient> clients = OctaneSDK.getClients();
         MqmProject project = Utils.parseUiLocation(octaneUrl);
-        if (clients.isEmpty()) { //clean config->add a new one
-            OctaneConfiguration octaneConfiguration = new OctaneConfiguration(uuid,
-                    project.getLocation(),
-                    project.getSharedSpace());
-            octaneConfiguration.setClient(accessKey);
-            octaneConfiguration.setSecret(apiSecret);
-            OctaneSDK.addClient(octaneConfiguration, BambooPluginServices.class);
-        } else { //update existing conf
-            OctaneClient client = clients.get(0);
-            OctaneConfiguration config = client.getConfigurationService().getCurrentConfiguration();
-
-            config.setSharedSpace(project.getSharedSpace());
-            config.setUrl(project.getLocation());
-            config.setClient(accessKey);
-            config.setSecret(apiSecret);
+        OctaneClient currentClient = clients.stream().filter(c -> c.getInstanceId().equals(uuid)).findFirst().orElse(null);
+        switch (action) {
+            case "CREATE": {
+                OctaneConfiguration octaneConfiguration = new OctaneConfiguration(uuid,
+                        project.getLocation(),
+                        project.getSharedSpace());
+                octaneConfiguration.setClient(accessKey);
+                octaneConfiguration.setSecret(apiSecret);
+                OctaneSDK.addClient(octaneConfiguration, BambooPluginServices.class);
+                break;
+            }
+            case "UPDATE": {
+                if (currentClient == null) {
+                    throw new ConfigurationException(404);
+                }
+                OctaneConfiguration config = currentClient.getConfigurationService().getCurrentConfiguration();
+                config.setSharedSpace(project.getSharedSpace());
+                config.setUrl(project.getLocation());
+                config.setClient(accessKey);
+                config.setSecret(apiSecret);
+                break;
+            }
+            case "DELETE": {
+                if (currentClient == null) {
+                    throw new ConfigurationException(404);
+                }
+                OctaneSDK.removeClient(currentClient);
+                break;
+            }
         }
     }
 
