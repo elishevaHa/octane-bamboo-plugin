@@ -27,13 +27,12 @@ import com.atlassian.sal.api.component.ComponentLocator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.OctaneConfiguration;
 import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
+import com.hp.octane.integrations.exceptions.OctaneConnectivityException;
 import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
 import com.hp.octane.plugins.bamboo.octane.MqmProject;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
 import com.hp.octane.plugins.bamboo.ui.ConfigureOctaneAction;
 import org.acegisecurity.acls.Permission;
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,33 +111,27 @@ public class OctaneRestResource {
             } else {
                 testedOctaneConfiguration.setSecret(clientSecret);
             }
-            OctaneResponse result;
 
-            result = OctaneSDK.testOctaneConfiguration(testedOctaneConfiguration.getUrl(),
-                    testedOctaneConfiguration.getSharedSpace(),
-                    testedOctaneConfiguration.getClient(),
-                    testedOctaneConfiguration.getSecret(),
-                    BambooPluginServices.class);
-
-            if (result.getStatus() == HttpStatus.SC_OK) {
-                return Response.ok().entity("Success").build();
-            } else if (result.getStatus() == HttpStatus.SC_UNAUTHORIZED) {
-                return Response.ok().entity("You are unauthorized").build();
-            } else if (result.getStatus() == HttpStatus.SC_FORBIDDEN) {
-                return Response.ok().entity("Connection Forbidden").build();
-
-            } else if (result.getStatus() == HttpStatus.SC_NOT_FOUND) {
-                return Response.ok().entity("URL not found").build();
+            try{
+                OctaneSDK.testAndValidateOctaneConfiguration(testedOctaneConfiguration.getUrl(),
+                        testedOctaneConfiguration.getSharedSpace(),
+                        testedOctaneConfiguration.getClient(),
+                        testedOctaneConfiguration.getSecret(),
+                        BambooPluginServices.class);
+            } catch (OctaneConnectivityException e){
+              //  return e.getErrorMessageVal();
             }
-            return Response.ok().entity("Error validating octane config").build();
+
+            return Response.ok().entity("Success").build();
 
         } catch (SSLHandshakeException e) {
             log.error("Exception at tryToConnect", e);
-            return Response.ok().entity(e.getMessage()).build();
+           // return e.getMessage();
         } catch (Exception e) {
             log.error("Exception at tryToConnect", e);
-            return Response.ok().entity("Error validating octane config").build();
+           // return "Error validating octane config";
         }
+        return Response.ok().build();////////////////
     }
 
     private boolean hasPermission(String userName) {
