@@ -5,12 +5,11 @@ import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.hp.octane.plugins.bamboo.octane.utils.JsonHelper;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 
 public class OctaneConnectionManager {
     private final PluginSettingsFactory settingsFactory;
-    private static final String CONFIGURATIONS_LIST = "CONFIRURATIONS_LIST";
+    public static final String CONFIGURATIONS_LIST = "CONFIRURATIONS_LIST";
 
     public OctaneConnectionManager(PluginSettingsFactory settingsFactory) {
         this.settingsFactory = settingsFactory;
@@ -20,17 +19,17 @@ public class OctaneConnectionManager {
         try {
             PluginSettings settings = this.settingsFactory.createGlobalSettings();
             OctaneConnectionCollection octaneConnectionCollection = new OctaneConnectionCollection();
-            if (settings.get(CONFIGURATIONS_LIST) == null) {
+            /*if (settings.get(CONFIGURATIONS_LIST) == null) {
                 settings.put(CONFIGURATIONS_LIST, JsonHelper.serialize(octaneConnectionCollection));
-            }
+            }*/
             String confStr = ((String) settings.get(CONFIGURATIONS_LIST));
-            if (confStr == null || confStr.isEmpty()) {
+            /*if (confStr == null || confStr.isEmpty()) {
                 octaneConnectionCollection.setOctaneConnections(new LinkedList<>());
                 confStr = JsonHelper.serialize(octaneConnectionCollection);
                 settings.put(CONFIGURATIONS_LIST, confStr);
-            } else {
-                octaneConnectionCollection = JsonHelper.deserialize(confStr, OctaneConnectionCollection.class);
-            }
+            } else {*/
+            octaneConnectionCollection = JsonHelper.deserialize(confStr, OctaneConnectionCollection.class);
+            // }
             return octaneConnectionCollection.getOctaneConnections();
         } catch (IOException e) {
             e.printStackTrace();
@@ -51,9 +50,15 @@ public class OctaneConnectionManager {
         }
     }
 
+    public OctaneConnection getConnectionById(String id){
+        return getConnectionsList().stream().filter(o->o.getId().equals(id)).findFirst().orElse(null);
+    }
 
     public void addConfiguration(OctaneConnection newConfiguration) {
         List<OctaneConnection> configurations = getConnectionsList();
+        if (configurations == null) {
+
+        }
         //cofigurations= cofigurations.stream().map(c->c.getId().equals(newConfiguration.getId())?newConfiguration:c).collect(Collectors.toList());;
         configurations.add(newConfiguration);
         setConnectionsList(configurations);

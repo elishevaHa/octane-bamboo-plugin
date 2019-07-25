@@ -76,8 +76,12 @@ public class OctaneConnectionRestResource {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         log.info("save configuration");
-        Utils.cud("UPDATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());
-        octaneConnectionManager.updateConfiguration(model);
+        try {
+            Utils.cud("UPDATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());///////switch?
+            octaneConnectionManager.updateConfiguration(model);
+        } catch (Exception e) {
+            Response.status(404).entity(e.getMessage()).build();
+        }
         return Response.ok().build();
     }
 
@@ -91,11 +95,11 @@ public class OctaneConnectionRestResource {
         }
         log.info("save configuration");
         model.setId(UUID.randomUUID().toString());
+        octaneConnectionManager.addConfiguration(model);
         try {
             Utils.cud("CREATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());
-            octaneConnectionManager.addConfiguration(model);
-        }catch (Exception e)
-        {
+        } catch (Exception e) {
+            octaneConnectionManager.deleteConfiguration(model.getId());
             Response.status(404).entity(e.getMessage()).build();
         }
         return Response.ok().build();
@@ -109,7 +113,7 @@ public class OctaneConnectionRestResource {
             Utils.cud("DELETE", null, id, null, null);
             octaneConnectionManager.deleteConfiguration(id);
         } catch (Exception e) {
-            Response.status(Response.Status.NOT_FOUND).entity("configuration not found").build();
+            Response.status(404).entity(e.getMessage()).build();
         }
         return Response.ok().build();
     }

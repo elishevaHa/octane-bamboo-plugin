@@ -4,13 +4,17 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class OctaneConnectionCollection {
-    private  List<OctaneConnection> octaneConnections;
+    private List<OctaneConnection> octaneConnections;
 
-    public List<OctaneConnection> getOctaneConnections(){
+    public List<OctaneConnection> getOctaneConnections() {
+        if (octaneConnections == null) {
+            octaneConnections = new LinkedList<>();
+        }
         return octaneConnections;
     }
-    public void setOctaneConnections(List<OctaneConnection> octaneConnections){
-        this.octaneConnections=octaneConnections;
+
+    public void setOctaneConnections(List<OctaneConnection> octaneConnections) {
+        this.octaneConnections = octaneConnections;
     }
 
 }

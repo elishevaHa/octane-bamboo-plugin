@@ -31,25 +31,25 @@ import com.hp.octane.integrations.exceptions.OctaneConnectivityException;
 import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
 import com.hp.octane.plugins.bamboo.octane.MqmProject;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
-import com.hp.octane.plugins.bamboo.ui.ConfigureOctaneAction;
 import org.acegisecurity.acls.Permission;
+import org.apache.commons.collections.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
-@Consumes({MediaType.APPLICATION_JSON})
-@Produces({MediaType.APPLICATION_JSON})
 @Path("/test")
 @Scanned
 public class OctaneRestResource {
@@ -57,81 +57,73 @@ public class OctaneRestResource {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
 
-   /* @Path("test")
-    @GET
-    public Response test() throws IOException {
-        return Response.ok().build();
-    }*/
-
     @POST
     @Path("/testconnection")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response testConfiguration(@Context HttpServletRequest request, OctaneConnection model) throws IOException {
-        return tryToConnect(model);
+        Map<String, String> result = new HashedMap();
+        try {
+            tryToConnect(model);
+            result.put("status", "ok");
+        } catch (OctaneConnectivityException e) {
+            result.put(e.getErrorMessageKey(), e.getErrorMessageVal());
+            return Response.status(Response.Status.CONFLICT).entity(result).build();
+        }
+        return Response.ok(result).build();
     }
 
-    private Response tryToConnect(OctaneConnection dto) {
-        try {
-            String location = dto.getLocation();
-            String clientId = dto.getClientId();
-            String clientSecret = dto.getClientSecret();
-            String bambooUser = dto.getBambooUser();
-            if (location == null || location.isEmpty()) {
-                return Response.ok().entity("Location URL is required").build();
-            }
-            if (clientId == null || clientId.isEmpty()) {
-                return Response.ok().entity("Client ID is required").build();
-            }
-
-            if (clientSecret == null || clientSecret.isEmpty()) {
-                return Response.ok().entity("Client Secret is required").build();
-            }
-
-            if (bambooUser == null || bambooUser.isEmpty()) {
-                return Response.ok().entity("Bamboo user is required").build();
-            }
-            if (!IsUserExist(bambooUser)) {
-                return Response.ok().entity("Bamboo user does not exist").build();
-            }
-
-            if (!hasPermission(bambooUser)) {
-                return Response.ok().entity("Bamboo user doesn't have enough permissions").build();
-            }
-            MqmProject mqmProject = Utils.parseUiLocation(location);
-            if (mqmProject.hasError()) {
-                return Response.ok().entity(mqmProject.getErrorMsg()).build();
-            }
-            OctaneConfiguration testedOctaneConfiguration = new OctaneConfiguration(UUID.randomUUID().toString(),
-                    mqmProject.getLocation(),
-                    mqmProject.getSharedSpace());
-            testedOctaneConfiguration.setClient(clientId);
-            if (ConfigureOctaneAction.PLAIN_PASSWORD.equals(clientSecret)) {
-                testedOctaneConfiguration.setSecret(ConfigureOctaneAction.readApiSecretFromSettings());
-            } else {
-                testedOctaneConfiguration.setSecret(clientSecret);
-            }
-
-            try{
-                OctaneSDK.testAndValidateOctaneConfiguration(testedOctaneConfiguration.getUrl(),
-                        testedOctaneConfiguration.getSharedSpace(),
-                        testedOctaneConfiguration.getClient(),
-                        testedOctaneConfiguration.getSecret(),
-                        BambooPluginServices.class);
-            } catch (OctaneConnectivityException e){
-              //  return e.getErrorMessageVal();
-            }
-
-            return Response.ok().entity("Success").build();
-
-        } catch (SSLHandshakeException e) {
-            log.error("Exception at tryToConnect", e);
-           // return e.getMessage();
-        } catch (Exception e) {
-            log.error("Exception at tryToConnect", e);
-           // return "Error validating octane config";
+    private void tryToConnect(OctaneConnection dto) throws OctaneConnectivityException {
+        String location = dto.getLocation();
+        String clientId = dto.getClientId();
+        String clientSecret = dto.getClientSecret();
+        String bambooUser = dto.getBambooUser();
+        if (location == null || location.isEmpty()) {
+            throw new OctaneConnectivityException(400, "INVALID", "Location URL is required");
         }
-        return Response.ok().build();////////////////
+        if (clientId == null || clientId.isEmpty()) {
+            throw new OctaneConnectivityException(400, "INVALID", "Client ID is required");
+        }
+
+        if (clientSecret == null || clientSecret.isEmpty()) {
+            throw new OctaneConnectivityException(400, "INVALID", "Client Secret is required");
+        }
+
+        if (bambooUser == null || bambooUser.isEmpty()) {
+            throw new OctaneConnectivityException(400, "INVALID", "Bamboo user is required");
+        }
+        if (!IsUserExist(bambooUser)) {
+            throw new OctaneConnectivityException(400, "INVALID", "Bamboo user does not exist");
+        }
+
+        if (!hasPermission(bambooUser)) {
+            throw new OctaneConnectivityException(403, "PERMISSION", "Bamboo user doesn't have enough permissions");
+        }
+        MqmProject mqmProject = Utils.parseUiLocation(location);
+        if (mqmProject.hasError()) {
+            throw new OctaneConnectivityException(404, "MQM_ERROR", mqmProject.getErrorMsg());
+        }
+        OctaneConfiguration testedOctaneConfiguration = new OctaneConfiguration(UUID.randomUUID().toString(),
+                mqmProject.getLocation(),
+                mqmProject.getSharedSpace());
+        testedOctaneConfiguration.setClient(clientId);
+      /* if (ConfigureOctaneAction.PLAIN_PASSWORD.equals(clientSecret)) {
+            // testedOctaneConfiguration.setSecret(ConfigureOctaneAction.readApiSecretFromSettings());
+
+        } else {*/
+        testedOctaneConfiguration.setSecret(clientSecret);
+        //}
+        try {
+            OctaneSDK.testAndValidateOctaneConfiguration(testedOctaneConfiguration.getUrl(),
+                    testedOctaneConfiguration.getSharedSpace(),
+                    testedOctaneConfiguration.getClient(),
+                    testedOctaneConfiguration.getSecret(),
+                    BambooPluginServices.class);
+        } catch (IOException e) {///////////delete it!!!!!!!!!!!!!!!!!!
+            e.printStackTrace();
+        }
+
+
     }
 
     private boolean hasPermission(String userName) {

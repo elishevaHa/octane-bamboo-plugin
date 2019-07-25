@@ -72,7 +72,7 @@ public class Utils {
             }
             case "UPDATE": {
                 if (currentClient == null) {
-                    throw new ConfigurationException(404);
+                    throw new RuntimeException("Configuration not found ");
                 }
                 OctaneConfiguration config = currentClient.getConfigurationService().getCurrentConfiguration();
                 config.setSharedSpace(project.getSharedSpace());
@@ -83,7 +83,7 @@ public class Utils {
             }
             case "DELETE": {
                 if (currentClient == null) {
-                    throw new ConfigurationException(404);
+                    throw new RuntimeException("Configuration not found ");
                 }
                 OctaneSDK.removeClient(currentClient);
                 break;

@@ -4,14 +4,6 @@ import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
 import com.atlassian.sal.api.component.ComponentLocator;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
-import com.hp.octane.integrations.OctaneConfiguration;
-import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
-import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
-import com.hp.octane.plugins.bamboo.octane.MqmProject;
-import com.hp.octane.plugins.bamboo.octane.utils.Utils;
-import com.hp.octane.plugins.bamboo.ui.ConfigureOctaneAction;
-import org.apache.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

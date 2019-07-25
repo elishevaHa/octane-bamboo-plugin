@@ -63,13 +63,17 @@
         <dependency>com.atlassian.auiplugin:aui-select2</dependency>
         <dependency>com.atlassian.auiplugin:aui-flag</dependency>
         <dependency>com.atlassian.auiplugin:aui-form-validation</dependency>
-        <resource type="download" name="/images" location="/images/wait."/>
+        <dependency>com.atlassian.auiplugin:jquery-throbber</dependency>
+        <resource type="download" name="images/" location="/images"/>
         <resource key="jsKey" type="download" name="xproduct-admin-ui-plugin.js" location="/js/bamboo-plugin.js"/>
         <resource key="cssKey" type="download" name="bamboo-plugin.css" location="/css/bamboo-plugin.css"/>
         <context>bamboo-plugin-resource-context</context>
     </web-resource>
 
     <!--<includeExclude key="exclude">-com.atlassian.plugin.spring.scanner.annotation.*</includeExclude>-->
+    <component key="eventListener" class="com.hp.octane.plugins.bamboo.listener.PluginStatusChangesListener">
+        <description>Listens if a plugin changes its status</description>
+    </component>
 
     <postChainAction key="ngaPostChainReporter" name="NGA post-chain build status reporter"
                      class="com.hp.octane.plugins.bamboo.listener.OctanePostChainAction">

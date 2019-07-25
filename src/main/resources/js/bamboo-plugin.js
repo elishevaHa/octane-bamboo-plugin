@@ -38,6 +38,7 @@
             AJS.$("#clientId").val("");
             AJS.$("#clientSecret").val("");
             AJS.$("#bambooUser").val("");
+            AJS.$("#dialog-message").css("visibility","hidden");
             AJS.dialog2("#config-dialog").show();
         })
 
@@ -49,6 +50,11 @@
 
         AJS.$("#dialog-testconnection-button").on('click', function (e) {
             e.preventDefault();
+            if (!validateRequiredFieldsFilled()) {
+                console.log("invalid");
+                return;
+            }
+            var throbber = AJS.$("#dialog-message");
             var model = {
                 id: "",
                 location: AJS.$("#location").val(),
@@ -56,7 +62,8 @@
                 clientSecret: AJS.$("#clientSecret").val(),
                 bambooUser: AJS.$("#bambooUser").val()
             };
-            testConnection(null, model);
+            throbber.css("visibility","visible");
+            testConnection(throbber, model);
         });
         //save
         AJS.$("#dialog-submit-button").on('click', function (e) {
@@ -88,6 +95,7 @@
                 }).done(function (msg) {
                     reloadTable(spaceTable);
                 }).fail(function (request, status, error) {
+                    alert(request.responseText);
                 });
             } else {//add
                 var myJSON = JSON.stringify(model);
@@ -101,7 +109,7 @@
                 }).done(function (msg) {
                     reloadTable(spaceTable);
                 }).fail(function (request, status, error) {
-
+                    alert(request.responseText);
                 });
             }
             AJS.dialog2("#config-dialog").hide();
@@ -122,10 +130,7 @@
                 var testConnectionButtonEl = $('<button class=\"aui-button aui-button-link\">Test Connection</button>').click(function (e) {
                     var statusEl = rowInstance.$el.children().eq(4);
                     var throbber = statusEl.children().first();
-                    throbber.addClass("test-connection-status");
-                    throbber.removeClass("test-connection-status-successful");
-                    throbber.removeClass("test-connection-status-failed");
-                    throbber.attr("title", "Testing connection ...");
+
 
                     var model = {
                         id: rowInstance.model.attributes.id,
@@ -134,7 +139,7 @@
                         clientSecret: rowInstance.model.attributes.clientSecret,
                         bambooUser: rowInstance.model.attributes.bambooUser
                     };
-                    testConnection(rowInstance, model);
+                    testConnection(throbber, model);
                 });
 
                 var deleteButtonEl = $('<button class=\"aui-button aui-button-link\">Delete</button>').click(function (e) {
@@ -208,6 +213,9 @@
                 url: spaceTable.options.resources.self + "/" + row.model.id, type: "DELETE",
             }).done(function () {
                 reloadTable(spaceTable);
+            }).fail(function (request, status, error) {
+                console.log("fail", request, status, error);
+                alert(request.responseText);
             });
         });
 
@@ -253,7 +261,11 @@
         table.fetchInitialResources();
     }
 
-    function testConnection(row, model) {
+    function testConnection(throbber, model) {
+        throbber.addClass("test-connection-status");
+        throbber.removeClass("test-connection-status-successful");
+        throbber.removeClass("test-connection-status-failed");
+        throbber.attr("title", "Testing connection ...");
 
         console.log("test connection model - ", model);
         var myJSON = JSON.stringify(model);
@@ -264,11 +276,13 @@
             data: myJSON,
             dataType: "json",
             contentType: "application/json"
-        }).done(function (msg) {
-            //reloadTable(spaceTable);
-            alert("success!!!!!");
+        }).done(function () {
+            throbber.addClass("test-connection-status-successful");
+            throbber.attr("title", "Test connection is successful");
         }).fail(function (request, status, error) {
-            alert("failure!!!");
+            throbber.addClass("test-connection-status-failed");
+            throbber.attr("title", "Test connection is failed : " +request.responseText);
+
         });
 
     }

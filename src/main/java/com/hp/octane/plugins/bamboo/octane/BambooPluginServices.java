@@ -58,9 +58,10 @@ import com.hp.octane.integrations.exceptions.ConfigurationException;
 import com.hp.octane.integrations.exceptions.PermissionException;
 import com.hp.octane.integrations.utils.CIPluginSDKUtils;
 import com.hp.octane.integrations.utils.SdkStringUtils;
-import com.hp.octane.plugins.bamboo.api.OctaneConfigurationKeys;
 import com.hp.octane.plugins.bamboo.octane.gherkin.ALMOctaneCucumberTestReporterConfigurator;
 import com.hp.octane.plugins.bamboo.octane.uft.UftManager;
+import com.hp.octane.plugins.bamboo.rest.OctaneConnection;
+import com.hp.octane.plugins.bamboo.rest.OctaneConnectionManager;
 import org.acegisecurity.acls.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,13 +178,11 @@ public class BambooPluginServices extends CIPluginServices {
     }
 
     @Override
-    public CIServerInfo getServerInfo() {
+    public CIServerInfo getServerInfo() {//////////////
         log.debug("get ci server info");
-        String instanceId = String.valueOf(getPluginSettings().get(OctaneConfigurationKeys.UUID));
-
+        OctaneConnection octaneConnection = getConnection();
         String baseUrl = getBambooServerBaseUrl();
-        String runAsUser = getRunAsUser();
-        return CONVERTER.getServerInfo(baseUrl, instanceId, runAsUser);
+        return CONVERTER.getServerInfo(baseUrl, octaneConnection.getId(), octaneConnection.getBambooUser());
     }
 
     @Override
@@ -299,16 +298,18 @@ public class BambooPluginServices extends CIPluginServices {
     }
 
     private String getRunAsUser() {
-        return String.valueOf(getPluginSettings().get(OctaneConfigurationKeys.IMPERSONATION_USER));
+        return getConnection().getBambooUser();
+    }
+    private OctaneConnection getConnection(){
+        OctaneConnectionManager octaneConnectionManager =new OctaneConnectionManager(getPluginSettingsFactory());
+        return octaneConnectionManager.getConnectionById(getInstanceId());
     }
 
-    private PluginSettings getPluginSettings() {
-        try {
-            return settingsFactory.createGlobalSettings();
-        } catch (Exception e) {//can occur then proxy object is destroyed on plugin redeployment
+    private PluginSettingsFactory getPluginSettingsFactory() {
+        if (settingsFactory == null) {
             settingsFactory = ComponentLocator.getComponent(PluginSettingsFactory.class);
-            return settingsFactory.createGlobalSettings();
         }
+        return settingsFactory;
     }
 
     @Override
@@ -361,10 +362,11 @@ public class BambooPluginServices extends CIPluginServices {
                 }
             }
 
+
             if (!testRuns.isEmpty()) {
                 List<TestField> testFields = runnerType.getTestFields();
                 BuildContext context = CONVERTER.getBuildContext(
-                        String.valueOf(settingsFactory.createGlobalSettings().get(OctaneConfigurationKeys.UUID)),
+                        String.valueOf(getConnection().getId()),
                         jobId,
                         buildId);
                 TestsResult testsResult = DTOFactory.getInstance().newDTO(TestsResult.class).setTestRuns(testRuns)

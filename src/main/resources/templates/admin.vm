@@ -50,9 +50,11 @@
     </div>
     <footer class="aui-dialog2-footer">
         <div class="aui-dialog2-footer-actions">
-            <button id="dialog-submit-button" class="aui-button aui-button-primary">Test Connection</button>
-            <button id="dialog-testconnection-button" class="aui-button aui-button-primary">Save</button>
+            <span id="dialog-message" class="aui-restfultable-throbber"></span>
+            <button id="dialog-testconnection-button" class="aui-button aui-button-primary">Test Connection</button>
+            <button id="dialog-submit-button" class="aui-button aui-button-primary">Save</button>
             <button id="dialog-cancel-button" class="aui-button aui-button-link">Cancel</button>
+
         </div>
     </footer>
 </section>

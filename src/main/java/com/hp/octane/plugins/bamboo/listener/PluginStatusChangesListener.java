@@ -20,17 +20,19 @@ import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.hp.octane.integrations.OctaneClient;
 import com.hp.octane.integrations.OctaneConfiguration;
 import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.plugins.bamboo.api.OctaneConfigurationKeys;
 import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
 import com.hp.octane.plugins.bamboo.octane.MqmProject;
+import com.hp.octane.plugins.bamboo.octane.utils.JsonHelper;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
+import com.hp.octane.plugins.bamboo.rest.OctaneConnection;
+import com.hp.octane.plugins.bamboo.rest.OctaneConnectionCollection;
+import com.hp.octane.plugins.bamboo.rest.OctaneConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.util.List;
-import java.util.UUID;
 
 public class PluginStatusChangesListener implements InitializingBean, DisposableBean {
 	private static final Logger logger = LoggerFactory.getLogger(PluginStatusChangesListener.class);
@@ -50,35 +52,30 @@ public class PluginStatusChangesListener implements InitializingBean, Disposable
 		}
 	}
 
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		logger.info("Init ALM Octane plugin - creating SDK clients");
-		PluginSettings settings = settingsFactory.createGlobalSettings();
-		String uuid, octaneUrl, accessKey, apiSecret, userName;
-		if (settings.get(OctaneConfigurationKeys.UUID) != null) {
-			uuid = String.valueOf(settings.get(OctaneConfigurationKeys.UUID));
-		} else {
-			// generate new UUID
-			uuid = UUID.randomUUID().toString();
-			settings.put(OctaneConfigurationKeys.UUID, uuid);
-		}
-		octaneUrl = settings.get(OctaneConfigurationKeys.OCTANE_URL) != null ?
-				String.valueOf(settings.get(OctaneConfigurationKeys.OCTANE_URL)) : "";
-		accessKey = settings.get(OctaneConfigurationKeys.ACCESS_KEY) != null ?
-				String.valueOf(settings.get(OctaneConfigurationKeys.ACCESS_KEY)) : "";
-		apiSecret = settings.get(OctaneConfigurationKeys.API_SECRET) != null ?
-				String.valueOf(settings.get(OctaneConfigurationKeys.API_SECRET)) : "";
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        logger.info("Init ALM Octane plugin - creating SDK clients");
+        PluginSettings settings = settingsFactory.createGlobalSettings();
+        OctaneConnectionCollection octaneConnectionCollection = new OctaneConnectionCollection();
+        if (settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST) == null) {
+            settings.put(OctaneConnectionManager.CONFIGURATIONS_LIST, JsonHelper.serialize(octaneConnectionCollection));
+        }
+        String confStr = ((String) settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST));
+        octaneConnectionCollection = JsonHelper.deserialize(confStr, OctaneConnectionCollection.class);
 
-		if(octaneUrl.isEmpty() && accessKey.isEmpty() && apiSecret.isEmpty()){
-			//empty configuration. Clean plugin installation
-			return;
-		}
-		MqmProject project = Utils.parseUiLocation(octaneUrl);
-		OctaneConfiguration octaneConfiguration = new OctaneConfiguration(uuid,
-				project.getLocation(),
-				project.getSharedSpace());
-		octaneConfiguration.setClient(accessKey);
-		octaneConfiguration.setSecret(apiSecret);
-		OctaneSDK.addClient(octaneConfiguration, BambooPluginServices.class);
-	}
+
+        for (OctaneConnection c : octaneConnectionCollection.getOctaneConnections()) {
+            try {
+                MqmProject project = Utils.parseUiLocation(c.getLocation());
+                OctaneConfiguration octaneConfiguration = new OctaneConfiguration(c.getId(),
+                        project.getLocation(),
+                        project.getSharedSpace());
+                octaneConfiguration.setClient(c.getClientId());
+                octaneConfiguration.setSecret(c.getClientSecret());
+                OctaneSDK.addClient(octaneConfiguration, BambooPluginServices.class);
+            } catch (Exception e) {
+                logger.info("Exception cannot add client to sdk " + e.getMessage());
+            }
+        }
+    }
 }
