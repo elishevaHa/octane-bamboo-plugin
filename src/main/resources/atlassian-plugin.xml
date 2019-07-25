@@ -70,11 +70,6 @@
         <context>bamboo-plugin-resource-context</context>
     </web-resource>
 
-    <!--<includeExclude key="exclude">-com.atlassian.plugin.spring.scanner.annotation.*</includeExclude>-->
-    <component key="eventListener" class="com.hp.octane.plugins.bamboo.listener.PluginStatusChangesListener">
-        <description>Listens if a plugin changes its status</description>
-    </component>
-
     <bambooEventListener key="generalEventsListener" class="com.hp.octane.plugins.bamboo.listener.GeneralEventsListener"/>
 
     <postChainAction key="ngaPostChainReporter" name="NGA post-chain build status reporter"
