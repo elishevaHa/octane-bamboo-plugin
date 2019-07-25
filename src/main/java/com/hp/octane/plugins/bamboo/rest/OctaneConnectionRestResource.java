@@ -77,6 +77,9 @@ public class OctaneConnectionRestResource {
         }
         log.info("save configuration");
         try {
+            if (model.getClientSecret().equals(OctaneConnectionManager.PLAIN_PASSWORD)) {
+                model.setClientSecret(octaneConnectionManager.getConnectionById(model.getId()).getClientSecret());
+            }
             Utils.cud("UPDATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());///////switch?
             octaneConnectionManager.updateConfiguration(model);
         } catch (Exception e) {
