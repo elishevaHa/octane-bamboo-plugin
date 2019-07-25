@@ -33,8 +33,8 @@ import com.hp.octane.plugins.bamboo.octane.MqmProject;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
 import org.acegisecurity.acls.Permission;
 import org.apache.commons.collections.map.HashedMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -53,7 +53,7 @@ import java.util.UUID;
 @Path("/test")
 @Scanned
 public class OctaneRestResource {
-    private static final Logger log = LoggerFactory.getLogger(OctaneRestResource.class);
+    private static final Logger log = LogManager.getLogger(OctaneRestResource.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
 

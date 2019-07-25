@@ -24,8 +24,8 @@ import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -41,7 +41,7 @@ import java.util.UUID;
 public class OctaneConnectionRestResource {
 
     private final OctaneConnectionManager octaneConnectionManager;
-    private static final Logger log = LoggerFactory.getLogger(OctaneConnectionRestResource.class);
+    private static final Logger log = LogManager.getLogger(OctaneConnectionRestResource.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private String location = "";
     private String clientId = "";
