@@ -50,39 +50,53 @@ public class OctaneConnection {
         return id;
     }
 
-    public void setId(String id) {
+    public OctaneConnection setId(String id) {
         this.id = id;
+        return this;
     }
 
     public String getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public OctaneConnection setLocation(String location) {
         this.location = location;
+        return this;
     }
 
     public String getClientId() {
         return clientId;
     }
 
-    public void setClientId(String clientId) {
+    public OctaneConnection setClientId(String clientId) {
         this.clientId = clientId;
+        return this;
     }
 
     public String getClientSecret() {
         return clientSecret;
     }
 
-    public void setClientSecret(String clientSecret) {
+    public OctaneConnection setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
+        return this;
     }
 
     public String getBambooUser() {
         return bambooUser;
     }
 
-    public void setBambooUser(String bambooUser) {
+    public OctaneConnection setBambooUser(String bambooUser) {
         this.bambooUser = bambooUser;
+        return this;
+    }
+
+    public OctaneConnection cloneForUI(){
+        return new OctaneConnection()
+                .setId(this.getId())
+                .setLocation(this.getLocation())
+                .setClientId(this.getClientId())
+                .setClientSecret(OctaneConnectionManager.PLAIN_PASSWORD)
+                .setBambooUser(this.getBambooUser());
     }
 }

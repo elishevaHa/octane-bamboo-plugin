@@ -6,10 +6,11 @@ import java.util.List;
 public class OctaneConnectionCollection {
     private List<OctaneConnection> octaneConnections;
 
+    public OctaneConnectionCollection() {
+        this.octaneConnections = new LinkedList<>();
+    }
+
     public List<OctaneConnection> getOctaneConnections() {
-        if (octaneConnections == null) {
-            octaneConnections = new LinkedList<>();
-        }
         return octaneConnections;
     }
 
@@ -17,25 +18,24 @@ public class OctaneConnectionCollection {
         this.octaneConnections = octaneConnections;
     }
 
-    public void addConnection(OctaneConnection octaneConnection)
-    {
+    public void addConnection(OctaneConnection octaneConnection) {
         octaneConnections.add(octaneConnection);
     }
-    public void removeConnection(OctaneConnection octaneConnection)
-    {
-        octaneConnections.remove(octaneConnection);
+
+    public boolean removeConnection(OctaneConnection octaneConnection) {
+        return octaneConnections.remove(octaneConnection);
     }
-    public void updateConnection(OctaneConnection octaneConnection)
-    {
-        for (int i = 0; octaneConnections != null && i < octaneConnections.size(); i++) {
-            if (octaneConnections.get(i).getId().equals(octaneConnection.getId())) {
-                octaneConnections.get(i).setLocation(octaneConnection.getLocation());
-                octaneConnections.get(i).setClientId(octaneConnection.getClientId());
-                octaneConnections.get(i).setClientSecret(octaneConnection.getClientSecret());
-                octaneConnections.get(i).setBambooUser(octaneConnection.getBambooUser());
-                return;
-            }
-        }
+
+    public void updateConnection(OctaneConnection octaneConnection) {
+        getConnectionById(octaneConnection.getId())
+                .setLocation(octaneConnection.getLocation())
+                .setClientId(octaneConnection.getClientId())
+                .setClientSecret(octaneConnection.getClientSecret())
+                .setBambooUser(octaneConnection.getBambooUser());
+    }
+
+    public OctaneConnection getConnectionById(String id) {
+        return octaneConnections.stream().filter(c -> c.getId().equals(id)).findFirst().orElse(null);
     }
 
 

@@ -56,40 +56,7 @@ public class Utils {
         }
     }
 
-    public static void cud(String action, String octaneUrl, String uuid, String accessKey, String apiSecret) {
-        List<OctaneClient> clients = OctaneSDK.getClients();
-        MqmProject project = Utils.parseUiLocation(octaneUrl);
-        OctaneClient currentClient = clients.stream().filter(c -> c.getInstanceId().equals(uuid)).findFirst().orElse(null);
-        switch (action) {
-            case "CREATE": {
-                OctaneConfiguration octaneConfiguration = new OctaneConfiguration(uuid,
-                        project.getLocation(),
-                        project.getSharedSpace());
-                octaneConfiguration.setClient(accessKey);
-                octaneConfiguration.setSecret(apiSecret);
-                OctaneSDK.addClient(octaneConfiguration, BambooPluginServices.class);
-                break;
-            }
-            case "UPDATE": {
-                if (currentClient == null) {
-                    throw new RuntimeException("Configuration not found ");
-                }
-                OctaneConfiguration config = currentClient.getConfigurationService().getCurrentConfiguration();
-                config.setSharedSpace(project.getSharedSpace());
-                config.setUrl(project.getLocation());
-                config.setClient(accessKey);
-                config.setSecret(apiSecret);
-                break;
-            }
-            case "DELETE": {
-                if (currentClient == null) {
-                    throw new RuntimeException("Configuration not found ");
-                }
-                OctaneSDK.removeClient(currentClient);
-                break;
-            }
-        }
-    }
+
 
     public static boolean registerArtifactDefinition(@NotNull Job job, String name, String pattern) {
         if (job == null || StringUtils.isEmpty(name) || StringUtils.isEmpty(pattern)) {

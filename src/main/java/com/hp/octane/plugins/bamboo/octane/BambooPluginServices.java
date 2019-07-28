@@ -21,7 +21,10 @@ import com.atlassian.bamboo.chains.BuildExecution;
 import com.atlassian.bamboo.configuration.AdministrationConfigurationAccessor;
 import com.atlassian.bamboo.configuration.ConcurrentBuildConfig;
 import com.atlassian.bamboo.fileserver.SystemDirectory;
-import com.atlassian.bamboo.plan.*;
+import com.atlassian.bamboo.plan.ExecutionRequestResult;
+import com.atlassian.bamboo.plan.PlanExecutionManager;
+import com.atlassian.bamboo.plan.PlanKeys;
+import com.atlassian.bamboo.plan.PlanResultKey;
 import com.atlassian.bamboo.plan.cache.CachedPlanManager;
 import com.atlassian.bamboo.plan.cache.ImmutableChain;
 import com.atlassian.bamboo.plan.cache.ImmutableTopLevelPlan;
@@ -34,7 +37,6 @@ import com.atlassian.bamboo.v2.build.CurrentBuildResult;
 import com.atlassian.bamboo.v2.build.queue.BuildQueueManager;
 import com.atlassian.plugin.PluginAccessor;
 import com.atlassian.sal.api.component.ComponentLocator;
-import com.atlassian.sal.api.pluginsettings.PluginSettings;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.hp.octane.integrations.CIPluginServices;
 import com.hp.octane.integrations.dto.DTOFactory;
@@ -55,6 +57,7 @@ import com.hp.octane.integrations.exceptions.ConfigurationException;
 import com.hp.octane.integrations.exceptions.PermissionException;
 import com.hp.octane.integrations.utils.CIPluginSDKUtils;
 import com.hp.octane.integrations.utils.SdkStringUtils;
+import com.hp.octane.plugins.bamboo.listener.GeneralEventsListener;
 import com.hp.octane.plugins.bamboo.listener.MultibranchHelper;
 import com.hp.octane.plugins.bamboo.octane.gherkin.ALMOctaneCucumberTestReporterConfigurator;
 import com.hp.octane.plugins.bamboo.octane.uft.UftManager;
@@ -137,7 +140,7 @@ public class BambooPluginServices extends CIPluginServices {
         log.info("get pipeline " + pipelineId);
         ImmutableTopLevelPlan plan = planMan.getPlanByKey(PlanKeys.getPlanKey(pipelineId), ImmutableTopLevelPlan.class);
         PipelineNode pipelineNode = CONVERTER.getRootPipelineNodeFromTopLevelPlan(plan);
-        MultibranchHelper.enrichMultiBranchParentPipeline(plan,pipelineNode);
+        MultibranchHelper.enrichMultiBranchParentPipeline(plan, pipelineNode);
         return pipelineNode;
     }
 
@@ -304,9 +307,9 @@ public class BambooPluginServices extends CIPluginServices {
     private String getRunAsUser() {
         return getConnection().getBambooUser();
     }
-    private OctaneConnection getConnection(){
-        OctaneConnectionManager octaneConnectionManager =new OctaneConnectionManager(getPluginSettingsFactory());
-        return octaneConnectionManager.getConnectionById(getInstanceId());
+
+    private OctaneConnection getConnection() {
+        return OctaneConnectionManager.getInstance().getConnectionById(getInstanceId());
     }
 
     private PluginSettingsFactory getPluginSettingsFactory() {
@@ -335,7 +338,7 @@ public class BambooPluginServices extends CIPluginServices {
 
 
         String workingDirectory = buildContext.getBuildResult().getCustomBuildData().get("working.directory");
-        String mqmResultFilePath = workingDirectory + File.separator + ALMOctaneCucumberTestReporterConfigurator.MQM_RESULT_FOLDER_PREFIX + File.separator +"Build_"+ buildContext.getBuildNumber() + File.separator + "mqmTests.xml";
+        String mqmResultFilePath = workingDirectory + File.separator + ALMOctaneCucumberTestReporterConfigurator.MQM_RESULT_FOLDER_PREFIX + File.separator + "Build_" + buildContext.getBuildNumber() + File.separator + "mqmTests.xml";
         File mqmResultFile = new File(mqmResultFilePath);
         if (mqmResultFile.exists()) {
             try {

@@ -22,8 +22,6 @@ import com.atlassian.sal.api.component.ComponentLocator;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hp.octane.plugins.bamboo.octane.utils.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,27 +30,20 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Consumes({MediaType.APPLICATION_JSON})
 @Produces({MediaType.APPLICATION_JSON})
-@Path("/")
+@Path("/space-configs")
 @Scanned
-public class OctaneConnectionRestResource {
+public class ConfigurationRestResource {
 
-    private final OctaneConnectionManager octaneConnectionManager;
-    private static final Logger log = LogManager.getLogger(OctaneConnectionRestResource.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-    private String location = "";
-    private String clientId = "";
-    private String clientSecret = "";
-    private String bambooUser = "";
-    private String uuid = "";
+    private OctaneConnectionManager octaneConnectionManager = OctaneConnectionManager.getInstance();
+    private static final Logger log = LogManager.getLogger(ConfigurationRestResource.class);
     private UserManager userManager;
 
-    public OctaneConnectionRestResource(PluginSettingsFactory settingsFactory) {
-        octaneConnectionManager = new OctaneConnectionManager(settingsFactory);
-    }
 
     private UserManager getUserManager() {
         if (userManager == null) {
@@ -66,106 +57,79 @@ public class OctaneConnectionRestResource {
         return (username != null && getUserManager().isSystemAdmin(username.getUserKey()));
     }
 
-
     @PUT
-    @Path("/space-config/self")
+    @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response updateSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
+    public Response updateSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model, @PathParam("id") String id) {
+        log.info("update configuration " + id);
         if (!hasPermissions(request)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        log.info("save configuration");
-        try {
-            if (model.getClientSecret().equals(OctaneConnectionManager.PLAIN_PASSWORD)) {
-                model.setClientSecret(octaneConnectionManager.getConnectionById(model.getId()).getClientSecret());
-            }
-            Utils.cud("UPDATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());///////switch?
-            octaneConnectionManager.updateConfiguration(model);
-        } catch (Exception e) {
-            Response.status(404).entity(e.getMessage()).build();
+        //TODO explain why
+        if (!model.getId().equals(id)) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("invalid request : ").build();
         }
+
+        if (octaneConnectionManager.getConnectionById(model.getId()) == null) {
+            Response.status(Response.Status.NOT_FOUND).entity("No configuration with id " + id).build();
+        }
+
+        octaneConnectionManager.replacePlainPasswordIfRequired(model);
+
+
+        //TODO do checks and try/check idf requried
+        octaneConnectionManager.updateConfiguration(model);
         return Response.ok().build();
     }
 
+
     @POST
-    @Path("/space-config/self")
+    @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
         if (!hasPermissions(request)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        log.info("save configuration");
+        log.info("add configuration");
+        if (model.getId() != null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("New configuration should not contain instance id").build();
+        }
         model.setId(UUID.randomUUID().toString());
-        octaneConnectionManager.addConfiguration(model);
+
         try {
-            Utils.cud("CREATE", model.getLocation(), model.getId(), model.getClientId(), model.getClientSecret());
+            octaneConnectionManager.addConfiguration(model);
         } catch (Exception e) {
-            octaneConnectionManager.deleteConfiguration(model.getId());
-            Response.status(404).entity(e.getMessage()).build();
+            //TODO do checks
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
         return Response.ok().build();
     }
 
 
     @DELETE
-    @Path("/space-config/self/{id}")
+    @Path("/{id}")
     public Response deleteConnection(@Context HttpServletRequest request, @PathParam("id") String id) {
+        if (octaneConnectionManager.getConnectionById(id) == null) {
+            Response.status(Response.Status.NOT_FOUND).entity("No configuration with id " + id).build();
+        }
+
         try {
-            Utils.cud("DELETE", null, id, null, null);
             octaneConnectionManager.deleteConfiguration(id);
         } catch (Exception e) {
-            Response.status(404).entity(e.getMessage()).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
         return Response.ok().build();
     }
 
     @GET
-    @Path("/space-config/all")
+    @Path("/")
     public Response readAllData(@Context HttpServletRequest request) {
-        return Response.ok(octaneConnectionManager.getConnectionsList()).build();
+        List<OctaneConnection> newList = new ArrayList();
+        octaneConnectionManager.getOctaneConnections().getOctaneConnections().forEach(c -> newList.add(c.cloneForUI()));
+        return Response.ok(newList).build();
     }
 
-
-    public String getBambooUser() {
-        return bambooUser;
-    }
-
-    public void setBambooUser(String username) {
-        bambooUser = username;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public String getClientSecret() {
-        return clientSecret;
-    }
-
-    public void setClientSecret(String clientSecret) {
-        this.clientSecret = clientSecret;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
 
 }

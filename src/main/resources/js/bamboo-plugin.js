@@ -38,7 +38,6 @@
             AJS.$("#clientId").val("");
             AJS.$("#clientSecret").val("");
             AJS.$("#bambooUser").val("");
-            AJS.$("#dialog-message").css("visibility","hidden");
             AJS.dialog2("#config-dialog").show();
         })
 
@@ -62,7 +61,6 @@
                 clientSecret: AJS.$("#clientSecret").val(),
                 bambooUser: AJS.$("#bambooUser").val()
             };
-            throbber.css("visibility","visible");
             testConnection(throbber, model);
         });
         //save
@@ -85,9 +83,8 @@
             {
                 model.id = spaceTable.currentRow.model.attributes.id;
                 var myJSON = JSON.stringify(model);
-                console.log("json ", myJSON);
                 $.ajax({
-                    url: spaceTable.options.resources.self,
+                    url: spaceTable.options.resources.all + "/" + model.id,
                     type: "PUT",
                     data: myJSON,
                     dataType: "json",
@@ -99,9 +96,8 @@
                 });
             } else {//add
                 var myJSON = JSON.stringify(model);
-                console.log("json ", myJSON);
                 $.ajax({
-                    url: spaceTable.options.resources.self,
+                    url: spaceTable.options.resources.all,
                     type: "POST",
                     data: myJSON,
                     dataType: "json",
@@ -130,7 +126,7 @@
                 var testConnectionButtonEl = $('<button class=\"aui-button aui-button-link\">Test Connection</button>').click(function (e) {
                     var statusEl = rowInstance.$el.children().eq(4);
                     var throbber = statusEl.children().first();
-
+                    console.log(throbber);
 
                     var model = {
                         id: rowInstance.model.attributes.id,
@@ -146,17 +142,17 @@
                     removeSpaceConfiguration(rowInstance);
                 });
 
-                var parentEl = $('<div></div>').append(editButtonEl, deleteButtonEl, testConnectionButtonEl);
+                var parentEl = $('<span></span>').append(editButtonEl, deleteButtonEl, testConnectionButtonEl);
                 return parentEl;
             }
         });
         spaceTable = new AJS.RestfulTable({
             el: jQuery("#configuration-rest-table"),
             resources: {
-                all: octanePluginContext.octaneAdminBaseUrl + "space-config/all",
-                self: octanePluginContext.octaneAdminBaseUrl + "space-config/self"
+                all: octanePluginContext.octaneAdminBaseUrl + "space-configs"
             },
             columns: [
+                {id: "id", header: "Instance ID"},
                 {id: "location", header: "Location"},
                 {id: "clientId", header: "Client ID"},
                 {id: "bambooUser", header: "Bamboo user"}
@@ -172,8 +168,6 @@
                 row: MyRow
             }
         });
-
-
     }
 
     function validateRequiredFieldsFilled() {
@@ -208,13 +202,11 @@
             e.preventDefault();
             AJS.dialog2("#warning-dialog").hide();
 
-            console.log("delete function ", spaceTable.options.resources.self + "/" + row.model.id);
             $.ajax({
-                url: spaceTable.options.resources.self + "/" + row.model.id, type: "DELETE",
+                url: spaceTable.options.resources.all + "/" + row.model.id, type: "DELETE",
             }).done(function () {
                 reloadTable(spaceTable);
             }).fail(function (request, status, error) {
-                console.log("fail", request, status, error);
                 alert(request.responseText);
             });
         });
@@ -262,14 +254,13 @@
     }
 
     function testConnection(throbber, model) {
+        console.log(throbber);
         throbber.addClass("test-connection-status");
         throbber.removeClass("test-connection-status-successful");
         throbber.removeClass("test-connection-status-failed");
         throbber.attr("title", "Testing connection ...");
 
-        console.log("test connection model - ", model);
         var myJSON = JSON.stringify(model);
-        console.log("json ", myJSON);
         $.ajax({
             url: octanePluginContext.octaneAdminBaseUrl + "test/testconnection",
             type: "POST",
@@ -281,7 +272,7 @@
             throbber.attr("title", "Test connection is successful");
         }).fail(function (request, status, error) {
             throbber.addClass("test-connection-status-failed");
-            throbber.attr("title", "Test connection is failed : " +request.responseText);
+            throbber.attr("title", "Test connection is failed : " + request.responseText);
 
         });
 

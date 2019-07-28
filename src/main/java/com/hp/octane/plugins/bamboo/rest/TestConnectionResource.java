@@ -52,8 +52,8 @@ import java.util.UUID;
 
 @Path("/test")
 @Scanned
-public class OctaneRestResource {
-    private static final Logger log = LogManager.getLogger(OctaneRestResource.class);
+public class TestConnectionResource {
+    private static final Logger log = LogManager.getLogger(TestConnectionResource.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -64,6 +64,7 @@ public class OctaneRestResource {
     public Response testConfiguration(@Context HttpServletRequest request, OctaneConnection model) throws IOException {
         Map<String, String> result = new HashedMap();
         try {
+            OctaneConnectionManager.getInstance().replacePlainPasswordIfRequired(model);
             tryToConnect(model);
             result.put("status", "ok");
         } catch (OctaneConnectivityException e) {
@@ -92,11 +93,11 @@ public class OctaneRestResource {
         if (bambooUser == null || bambooUser.isEmpty()) {
             throw new OctaneConnectivityException(400, "INVALID", "Bamboo user is required");
         }
-        if (!IsUserExist(bambooUser)) {
+        if (!isUserExist(bambooUser)) {
             throw new OctaneConnectivityException(400, "INVALID", "Bamboo user does not exist");
         }
 
-        if (!hasPermission(bambooUser)) {
+        if (!hasBuildPermission(bambooUser)) {
             throw new OctaneConnectivityException(403, "PERMISSION", "Bamboo user doesn't have enough permissions");
         }
         MqmProject mqmProject = Utils.parseUiLocation(location);
@@ -107,12 +108,7 @@ public class OctaneRestResource {
                 mqmProject.getLocation(),
                 mqmProject.getSharedSpace());
         testedOctaneConfiguration.setClient(clientId);
-      /* if (ConfigureOctaneAction.PLAIN_PASSWORD.equals(clientSecret)) {
-            // testedOctaneConfiguration.setSecret(ConfigureOctaneAction.readApiSecretFromSettings());
-
-        } else {*/
         testedOctaneConfiguration.setSecret(clientSecret);
-        //}
         try {
             OctaneSDK.testAndValidateOctaneConfiguration(testedOctaneConfiguration.getUrl(),
                     testedOctaneConfiguration.getSharedSpace(),
@@ -120,13 +116,12 @@ public class OctaneRestResource {
                     testedOctaneConfiguration.getSecret(),
                     BambooPluginServices.class);
         } catch (IOException e) {///////////delete it!!!!!!!!!!!!!!!!!!
-            e.printStackTrace();
+            OctaneConnectivityException ex = new OctaneConnectivityException(500, "SDK_EXCEPTION", "cannot connect- sdk exception");
+            throw ex;
         }
-
-
     }
 
-    private boolean hasPermission(String userName) {
+    private boolean hasBuildPermission(String userName) {
         PlanManager planManager = ComponentLocator.getComponent(PlanManager.class);
         List<Chain> plans = planManager.getAllPlans(Chain.class);
         if (plans.isEmpty()) {
@@ -148,7 +143,7 @@ public class OctaneRestResource {
         return permissionManager.hasPermission(user, permissionType, chain);
     }
 
-    private boolean IsUserExist(String userName) {
+    private boolean isUserExist(String userName) {
         BambooUserManager bambooUserManager = ComponentLocator.getComponent(com.atlassian.bamboo.user.BambooUserManager.class);
         BambooUser bambooUser = bambooUserManager.loadUserByUsername(userName);
         if (bambooUser != null) {
