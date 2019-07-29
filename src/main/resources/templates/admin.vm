@@ -46,12 +46,15 @@
                 <div class="error"  id="bambooUserError"></div>
                 <div class="description">The account that will run jobs for ALM Octane (must have build plan permissions).</div>
             </div>
+            <br/>
+            <span id="dialog-message" class="aui-restfultable-throbber"></span>
+            <button id="dialog-testconnection-button" class="aui-button aui-button-primary">Test Connection</button>
+            <div id="error-massege"></div>
         </form>
     </div>
     <footer class="aui-dialog2-footer">
         <div class="aui-dialog2-footer-actions">
-            <span id="dialog-message" class="aui-restfultable-throbber"></span>
-            <button id="dialog-testconnection-button" class="aui-button aui-button-primary">Test Connection</button>
+
             <button id="dialog-submit-button" class="aui-button aui-button-primary">Save</button>
             <button id="dialog-cancel-button" class="aui-button aui-button-link">Cancel</button>
 

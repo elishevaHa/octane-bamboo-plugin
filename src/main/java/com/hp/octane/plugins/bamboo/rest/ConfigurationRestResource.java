@@ -19,7 +19,6 @@ package com.hp.octane.plugins.bamboo.rest;
 
 import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
 import com.atlassian.sal.api.component.ComponentLocator;
-import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import org.apache.logging.log4j.LogManager;
@@ -80,7 +79,7 @@ public class ConfigurationRestResource {
 
         //TODO do checks and try/check idf requried
         octaneConnectionManager.updateConfiguration(model);
-        return Response.ok().build();
+        return Response.ok().entity(model).build();
     }
 
 
@@ -93,7 +92,7 @@ public class ConfigurationRestResource {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         log.info("add configuration");
-        if (model.getId() != null) {
+        if (!model.getId().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST).entity("New configuration should not contain instance id").build();
         }
         model.setId(UUID.randomUUID().toString());
@@ -104,7 +103,7 @@ public class ConfigurationRestResource {
             //TODO do checks
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
-        return Response.ok().build();
+        return Response.ok().entity(model).build();
     }
 
 
@@ -120,7 +119,7 @@ public class ConfigurationRestResource {
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
-        return Response.ok().build();
+        return Response.ok().entity(true).build();
     }
 
     @GET

@@ -91,8 +91,9 @@
                     contentType: "application/json"
                 }).done(function (msg) {
                     reloadTable(spaceTable);
+                    AJS.dialog2("#config-dialog").hide();
                 }).fail(function (request, status, error) {
-                    alert(request.responseText);
+                    $("error-massege").innerHTML = request.responseText;
                 });
             } else {//add
                 var myJSON = JSON.stringify(model);
@@ -104,11 +105,11 @@
                     contentType: "application/json"
                 }).done(function (msg) {
                     reloadTable(spaceTable);
+                    AJS.dialog2("#config-dialog").hide();
                 }).fail(function (request, status, error) {
-                    alert(request.responseText);
+                    $("error-massege").innerHTML = request.responseText;
                 });
             }
-            AJS.dialog2("#config-dialog").hide();
         });
 
     }
@@ -124,7 +125,7 @@
                 });
 
                 var testConnectionButtonEl = $('<button class=\"aui-button aui-button-link\">Test Connection</button>').click(function (e) {
-                    var statusEl = rowInstance.$el.children().eq(4);
+                    var statusEl = rowInstance.$el.children().eq(5);
                     var throbber = statusEl.children().first();
                     console.log(throbber);
 

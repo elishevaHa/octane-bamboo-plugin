@@ -17,6 +17,8 @@
 package com.hp.octane.plugins.bamboo.listener;
 
 import com.atlassian.bamboo.event.ChainDeletedEvent;
+import com.atlassian.bamboo.event.HibernateEventListenerAspect;
+import com.atlassian.bamboo.v2.build.events.PostBuildCompletedEvent;
 import com.atlassian.event.api.EventListener;
 import com.atlassian.plugin.event.events.PluginDisablingEvent;
 import com.atlassian.plugin.event.events.PluginEnabledEvent;
@@ -44,6 +46,13 @@ public class GeneralEventsListener extends BaseListener {
     }
 
     @EventListener
+    @HibernateEventListenerAspect
+    public void onJobCompleted(PostBuildCompletedEvent event) {
+        log.info("on job completed " + event.getPlanKey().getKey());
+        OctanePostChainAction.onJobCompleted(event);
+    }
+
+    @EventListener
     public void onPluginEnabled(PluginEnabledEvent event) {
         if (BambooPluginServices.PLUGIN_KEY.equals(event.getPlugin().getKey())) {
             initOctaneAllowedStorageParameter();
@@ -57,6 +66,7 @@ public class GeneralEventsListener extends BaseListener {
             OctaneConnectionManager.getInstance().removeClients();
         }
     }
+
 
     private static void initOctaneAllowedStorageParameter() {
         try {

@@ -56,13 +56,13 @@ public class OctaneConnectionManager {
     }
 
     public void addConfiguration(OctaneConnection newConfiguration) {
-        addSdkClient(newConfiguration);
         octaneConnectionCollection.addConnection(newConfiguration);
+        addSdkClient(newConfiguration);
         saveSettings();
     }
 
     public void updateConfiguration(OctaneConnection octaneConnection) {
-        updateClientInSDK(octaneConnection.getLocation(), octaneConnection.getId(), octaneConnection.getClientId(), octaneConnection.getClientSecret());
+        updateClientInSDK(octaneConnection);
         octaneConnectionCollection.updateConnection(octaneConnection);
         saveSettings();
         return;
@@ -92,18 +92,18 @@ public class OctaneConnectionManager {
         OctaneSDK.addClient(octaneConfiguration, BambooPluginServices.class);
     }
 
-    private void updateClientInSDK(String octaneUrl, String uuid, String accessKey, String apiSecret) {
+    private void updateClientInSDK(OctaneConnection configuration) {
         List<OctaneClient> clients = OctaneSDK.getClients();
-        MqmProject project = Utils.parseUiLocation(octaneUrl);
-        OctaneClient currentClient = clients.stream().filter(c -> c.getInstanceId().equals(uuid)).findFirst().orElse(null);
+        MqmProject project = Utils.parseUiLocation(configuration.getLocation());
+        OctaneClient currentClient = clients.stream().filter(c -> c.getInstanceId().equals(configuration.getId())).findFirst().orElse(null);
         if (currentClient == null) {
             throw new RuntimeException("Configuration not found ");
         }
         OctaneConfiguration config = currentClient.getConfigurationService().getCurrentConfiguration();
         config.setSharedSpace(project.getSharedSpace());
         config.setUrl(project.getLocation());
-        config.setClient(accessKey);
-        config.setSecret(apiSecret);
+        config.setClient(configuration.getClientId());
+        config.setSecret(configuration.getClientSecret());
     }
 
     private void removeClientFromSDK(String uuid) {
@@ -126,8 +126,12 @@ public class OctaneConnectionManager {
         try {
             PluginSettings settings = settingsFactory.createGlobalSettings();
             if (settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST) == null) {
-                //TODO - upgrade from previous version
                 octaneConnectionCollection = new OctaneConnectionCollection();
+                OctaneConnection octaneConnection = PreviousVersionsConfigurationHelper_1_7.tryReadConfiguration(settingsFactory);
+                if (octaneConnection != null) {
+                    addConfiguration(octaneConnection);
+                }
+                PreviousVersionsConfigurationHelper_1_7.removePreviousVersion(settingsFactory);
             } else {
                 String confStr = ((String) settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST));
                 octaneConnectionCollection = JsonHelper.deserialize(confStr, OctaneConnectionCollection.class);
