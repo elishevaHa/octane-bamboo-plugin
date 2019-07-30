@@ -28,6 +28,7 @@ import com.atlassian.bamboo.plan.PlanResultKey;
 import com.atlassian.bamboo.plan.cache.CachedPlanManager;
 import com.atlassian.bamboo.plan.cache.ImmutableChain;
 import com.atlassian.bamboo.plan.cache.ImmutableTopLevelPlan;
+import com.atlassian.bamboo.plugin.BambooApplication;
 import com.atlassian.bamboo.results.tests.TestResults;
 import com.atlassian.bamboo.security.BambooPermissionManager;
 import com.atlassian.bamboo.security.acegi.acls.BambooPermission;
@@ -48,6 +49,7 @@ import com.hp.octane.integrations.dto.executor.TestConnectivityInfo;
 import com.hp.octane.integrations.dto.general.CIJobsList;
 import com.hp.octane.integrations.dto.general.CIPluginInfo;
 import com.hp.octane.integrations.dto.general.CIServerInfo;
+import com.hp.octane.integrations.dto.general.CIServerTypes;
 import com.hp.octane.integrations.dto.parameters.CIParameter;
 import com.hp.octane.integrations.dto.parameters.CIParameters;
 import com.hp.octane.integrations.dto.pipelines.PipelineNode;
@@ -80,6 +82,7 @@ public class BambooPluginServices extends CIPluginServices {
     private static final Logger log = LogManager.getLogger(BambooPluginServices.class);
     private static final DTOFactory dtoFactory = DTOFactory.getInstance();
     private final String pluginVersion;
+    private final String bambooVersion;
     public static String PLUGIN_KEY = "com.hpe.adm.octane.ciplugins.bamboo-ci-plugin";
 
     private CachedPlanManager planMan;
@@ -98,6 +101,8 @@ public class BambooPluginServices extends CIPluginServices {
         this.impService = ComponentLocator.getComponent(ImpersonationService.class);
         this.buildQueueManager = ComponentLocator.getComponent(BuildQueueManager.class);
         pluginVersion = ComponentLocator.getComponent(PluginAccessor.class).getPlugin(PLUGIN_KEY).getPluginInformation().getVersion();
+        bambooVersion = ComponentLocator.getComponent(BambooApplication.class).getVersion();
+
     }
 
 
@@ -185,11 +190,10 @@ public class BambooPluginServices extends CIPluginServices {
     }
 
     @Override
-    public CIServerInfo getServerInfo() {//////////////
+    public CIServerInfo getServerInfo() {
         log.debug("get ci server info");
-        OctaneConnection octaneConnection = getConnection();
         String baseUrl = getBambooServerBaseUrl();
-        return CONVERTER.getServerInfo(baseUrl, octaneConnection.getId(), octaneConnection.getBambooUser());
+        return CONVERTER.getServerInfo(baseUrl, bambooVersion);
     }
 
     @Override

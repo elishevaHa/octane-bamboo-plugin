@@ -18,8 +18,6 @@
     // This pattern is known as an "iife" - immediately invoked function expression
     var octanePluginContext = {};
     octanePluginContext.octaneAdminBaseUrl = AJS.contextPath() + "/rest/octane-admin/1.0/";
-// wait for the DOM (i.e., document "skeleton") to load. This likely isn't necessary for the current case,
-// but may be helpful for AJAX that provides secondary content.
     var spaceTable;
 
     AJS.$(document).ready(function () {
@@ -32,13 +30,9 @@
     function configureSpaceConfigurationDialog() {
         //show
         AJS.$("#show-add-dialog").on('click', function (e) {
-            spaceTable.currentRow = null;
             e.preventDefault();
-            AJS.$("#location").val("");
-            AJS.$("#clientId").val("");
-            AJS.$("#clientSecret").val("");
-            AJS.$("#bambooUser").val("");
-            AJS.dialog2("#config-dialog").show();
+            octanePluginContext.currentRow = null;
+            showSpaceConfigurationDialog(null);
         })
 
         //cancel
@@ -50,12 +44,13 @@
         AJS.$("#dialog-testconnection-button").on('click', function (e) {
             e.preventDefault();
             if (!validateRequiredFieldsFilled()) {
-                console.log("invalid");
                 return;
             }
+            $("#dialog-message").show();
             var throbber = AJS.$("#dialog-message");
+            var id = octanePluginContext.currentRow != null ? octanePluginContext.currentRow.model.attributes.id : "";
             var model = {
-                id: "",
+                id: id,
                 location: AJS.$("#location").val(),
                 clientId: AJS.$("#clientId").val(),
                 clientSecret: AJS.$("#clientSecret").val(),
@@ -66,9 +61,7 @@
         //save
         AJS.$("#dialog-submit-button").on('click', function (e) {
             e.preventDefault();
-            console.log("submit");
             if (!validateRequiredFieldsFilled()) {
-                console.log("invalid");
                 return;
             }
             var model = {
@@ -78,38 +71,31 @@
                 clientSecret: $("#clientSecret").val(),
                 bambooUser: $("#bambooUser").val()
             };
-
-            if (spaceTable.currentRow)//update
-            {
-                model.id = spaceTable.currentRow.model.attributes.id;
-                var myJSON = JSON.stringify(model);
-                $.ajax({
-                    url: spaceTable.options.resources.all + "/" + model.id,
-                    type: "PUT",
-                    data: myJSON,
-                    dataType: "json",
-                    contentType: "application/json"
-                }).done(function (msg) {
-                    reloadTable(spaceTable);
-                    AJS.dialog2("#config-dialog").hide();
-                }).fail(function (request, status, error) {
-                    $("error-massege").innerHTML = request.responseText;
-                });
+            var url;
+            var type;
+            if (octanePluginContext.currentRow) {//update
+                model.id = octanePluginContext.currentRow.model.attributes.id;
+                url = spaceTable.options.resources.all + "/" + model.id;
+                type = "PUT";
             } else {//add
-                var myJSON = JSON.stringify(model);
-                $.ajax({
-                    url: spaceTable.options.resources.all,
-                    type: "POST",
-                    data: myJSON,
-                    dataType: "json",
-                    contentType: "application/json"
-                }).done(function (msg) {
-                    reloadTable(spaceTable);
-                    AJS.dialog2("#config-dialog").hide();
-                }).fail(function (request, status, error) {
-                    $("error-massege").innerHTML = request.responseText;
-                });
+                url = spaceTable.options.resources.all;
+                type = "POST";
             }
+            var myJSON = JSON.stringify(model);
+            $.ajax({
+                url: url,
+                type: type,
+                data: myJSON,
+                dataType: "json",
+                contentType: "application/json"
+            }).done(function (result) {
+                console.log("post result", result);
+                refreshRow(result);
+                //reloadTable(spaceTable);
+                AJS.dialog2("#config-dialog").hide();
+            }).fail(function (request, status, error) {
+                $("#error-massege").text(request.responseText.toString());
+            });
         });
 
     }
@@ -120,14 +106,13 @@
                 var rowInstance = this;
 
                 var editButtonEl = $('<button class=\"aui-button aui-button-link\">Edit</button>').click(function (e) {
-                    spaceTable.currentRow = rowInstance;
+                    octanePluginContext.currentRow = rowInstance;
                     showSpaceConfigurationDialog(rowInstance);
                 });
 
                 var testConnectionButtonEl = $('<button class=\"aui-button aui-button-link\">Test Connection</button>').click(function (e) {
                     var statusEl = rowInstance.$el.children().eq(5);
                     var throbber = statusEl.children().first();
-                    console.log(throbber);
 
                     var model = {
                         id: rowInstance.model.attributes.id,
@@ -206,7 +191,8 @@
             $.ajax({
                 url: spaceTable.options.resources.all + "/" + row.model.id, type: "DELETE",
             }).done(function () {
-                reloadTable(spaceTable);
+                //reloadTable(spaceTable);
+                spaceTable.removeRow(row)
             }).fail(function (request, status, error) {
                 alert(request.responseText);
             });
@@ -221,41 +207,33 @@
     function showSpaceConfigurationDialog(rowForEdit) {
         var editMode = !!rowForEdit;
         var editEntity = editMode ? rowForEdit.model.attributes : null;
-
-
-        function onCloseCallback(result) {
-            if (result && result.entity) {
-                if (editMode) {
-                    var rowModel = rowForEdit.model.attributes;
-                    rowModel.location = result.entity.location;
-                    rowModel.clientId = result.entity.clientId;
-                    rowModel.clientSecret = result.entity.clientSecret;
-                    rowModel.bambooUser = result.entity.bambooUser;
-                    rowForEdit.render();
-                    //    reloadTable(spaceTable);
-                } else {
-                    spaceTable.addRow(result.entity);
-                }
-            }
-        }
-
-
         AJS.$("#location").val(editEntity ? editEntity.location : "");
         AJS.$("#clientId").val(editEntity ? editEntity.clientId : "");
         AJS.$("#clientSecret").val(editEntity ? editEntity.clientSecret : "");
         AJS.$("#bambooUser").val(editEntity ? editEntity.bambooUser : "");
+        $("#dialog-message").hide();
         AJS.dialog2("#config-dialog").show();
+    }
 
+    function refreshRow(model) {
+        if (octanePluginContext.currentRow) {
+            var rowModel = octanePluginContext.currentRow.model.attributes;
+            rowModel.location = model.location;
+            rowModel.clientId = model.clientId;
+            rowModel.clientSecret = model.clientSecret;
+            rowModel.bambooUser = model.bambooUser;
+            octanePluginContext.currentRow.render();
+        } else {
+            spaceTable.addRow(model);
+        }
     }
 
     function reloadTable(table) {
-        console.log("reloadTable");
         table.$tbody.empty();
         table.fetchInitialResources();
     }
 
     function testConnection(throbber, model) {
-        console.log(throbber);
         throbber.addClass("test-connection-status");
         throbber.removeClass("test-connection-status-successful");
         throbber.removeClass("test-connection-status-failed");
@@ -276,16 +254,6 @@
             throbber.attr("title", "Test connection is failed : " + request.responseText);
 
         });
-
     }
-
-
-    AJS.$(document).bind(AJS.RestfulTable.Events.INITIALIZED, function () {
-        //update name of action column that is second from end
-        //last two columns don't have name : action column and loading indicator used when editing
-        //$("#configuration-rest-table th:nth-last-child(2)").each(function () {
-        //this.innerHTML = 'Actions';
-        //});
-    });
 
 }(AJS.$ || jQuery));

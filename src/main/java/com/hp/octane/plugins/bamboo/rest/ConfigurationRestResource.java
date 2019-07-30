@@ -65,9 +65,8 @@ public class ConfigurationRestResource {
         if (!hasPermissions(request)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        //TODO explain why
         if (!model.getId().equals(id)) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("invalid request : ").build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("invalid request : unexpected id").build();
         }
 
         if (octaneConnectionManager.getConnectionById(model.getId()) == null) {
@@ -75,9 +74,6 @@ public class ConfigurationRestResource {
         }
 
         octaneConnectionManager.replacePlainPasswordIfRequired(model);
-
-
-        //TODO do checks and try/check idf requried
         octaneConnectionManager.updateConfiguration(model);
         return Response.ok().entity(model).build();
     }
@@ -100,7 +96,6 @@ public class ConfigurationRestResource {
         try {
             octaneConnectionManager.addConfiguration(model);
         } catch (Exception e) {
-            //TODO do checks
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
         return Response.ok().entity(model).build();

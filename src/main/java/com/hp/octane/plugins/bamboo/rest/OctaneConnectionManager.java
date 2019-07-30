@@ -17,7 +17,7 @@ import java.util.List;
 
 public class OctaneConnectionManager {
 
-    private static final Logger logger = LogManager.getLogger(OctaneConnectionManager.class);
+    private static final Logger log = LogManager.getLogger(OctaneConnectionManager.class);
     private PluginSettingsFactory settingsFactory;
     private static final String PLUGIN_PREFIX = "com.hp.octane.plugins.bamboo.";
     public static final String CONFIGURATIONS_LIST = PLUGIN_PREFIX + "CONFIGURATIONS_LIST";
@@ -47,7 +47,7 @@ public class OctaneConnectionManager {
             PluginSettings settings = this.settingsFactory.createGlobalSettings();
             settings.put(CONFIGURATIONS_LIST, confStr);
         } catch (IOException e) {
-            logger.error("Failed to saveSettings : " + e.getMessage());
+            log.error("Failed to saveSettings : " + e.getMessage());
         }
     }
 
@@ -56,12 +56,14 @@ public class OctaneConnectionManager {
     }
 
     public void addConfiguration(OctaneConnection newConfiguration) {
-        octaneConnectionCollection.addConnection(newConfiguration);
+        log.info("add new configuration: "+newConfiguration.getLocation());
         addSdkClient(newConfiguration);
+        octaneConnectionCollection.addConnection(newConfiguration);
         saveSettings();
     }
 
     public void updateConfiguration(OctaneConnection octaneConnection) {
+        log.info("update configuration: "+octaneConnection.getLocation());
         updateClientInSDK(octaneConnection);
         octaneConnectionCollection.updateConnection(octaneConnection);
         saveSettings();
@@ -69,8 +71,10 @@ public class OctaneConnectionManager {
     }
 
     public boolean deleteConfiguration(String id) {
+        OctaneConnection octaneConnection=getConnectionById(id);
+        log.info("delete configuration: "+octaneConnection.getLocation());
         removeClientFromSDK(id);
-        boolean removed = octaneConnectionCollection.removeConnection(getConnectionById(id));
+        boolean removed = octaneConnectionCollection.removeConnection(octaneConnection);
         saveSettings();
 
         return removed;
@@ -117,11 +121,11 @@ public class OctaneConnectionManager {
     }
 
     private void initSdkClients() {
-        logger.info("");
-        logger.info("");
-        logger.info("***********************************************************************************");
-        logger.info("****************************Enabling plugin - init SDK Clients*********************");
-        logger.info("***********************************************************************************");
+        log.info("");
+        log.info("");
+        log.info("***********************************************************************************");
+        log.info("****************************Enabling plugin - init SDK Clients*********************");
+        log.info("***********************************************************************************");
 
         try {
             PluginSettings settings = settingsFactory.createGlobalSettings();
@@ -135,22 +139,21 @@ public class OctaneConnectionManager {
             } else {
                 String confStr = ((String) settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST));
                 octaneConnectionCollection = JsonHelper.deserialize(confStr, OctaneConnectionCollection.class);
-            }
-
-            for (OctaneConnection c : octaneConnectionCollection.getOctaneConnections()) {
-                try {
-                    addSdkClient(c);
-                } catch (Exception e) {
-                    logger.info(String.format("Failed to add client '%s' to sdk : %s", c.getId(), e.getMessage()));
+                for (OctaneConnection c : octaneConnectionCollection.getOctaneConnections()) {
+                    try {
+                        addSdkClient(c);
+                    } catch (Exception e) {
+                        log.info(String.format("Failed to add client '%s' to sdk : %s", c.getId(), e.getMessage()));
+                    }
                 }
             }
         } catch (IOException e) {
-            logger.error("Failed to initSdkClients : " + e.getMessage(), e);
+            log.error("Failed to initSdkClients : " + e.getMessage(), e);
         }
     }
 
     public void removeClients() {
-        logger.info("Disabling plugin - removing SDK clients");
+        log.info("Disabling plugin - removing SDK clients");
         OctaneSDK.getClients().forEach(c -> OctaneSDK.removeClient(c));
     }
 
