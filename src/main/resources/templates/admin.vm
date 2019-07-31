@@ -51,8 +51,7 @@
                 <label for="bambooUser">Bamboo user<span class="aui-icon icon-required">(required)</span></label>
                 <input type='text' name='bambooUser' id='bambooUser' class="text medium-long-field required"/>
                 <div class="error" id="bambooUserError"></div>
-                <div class="description">The account that will run jobs for ALM Octane (must have build plan
-                    permissions).
+                <div class="description">The user to impersonate (Plans will be executed on behalf of this user)
                 </div>
             </div>
             <br/>

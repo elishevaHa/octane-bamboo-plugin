@@ -97,12 +97,9 @@ public class OctaneConnectionManager {
     }
 
     private void updateClientInSDK(OctaneConnection configuration) {
-        List<OctaneClient> clients = OctaneSDK.getClients();
+        OctaneClient currentClient = OctaneSDK.getClientByInstanceId(configuration.getId());
         MqmProject project = Utils.parseUiLocation(configuration.getLocation());
-        OctaneClient currentClient = clients.stream().filter(c -> c.getInstanceId().equals(configuration.getId())).findFirst().orElse(null);
-        if (currentClient == null) {
-            throw new RuntimeException("Configuration not found ");
-        }
+
         OctaneConfiguration config = currentClient.getConfigurationService().getCurrentConfiguration();
         config.setSharedSpace(project.getSharedSpace());
         config.setUrl(project.getLocation());
@@ -111,12 +108,7 @@ public class OctaneConnectionManager {
     }
 
     private void removeClientFromSDK(String uuid) {
-        OctaneClient currentClient = OctaneSDK.getClients().stream()
-                .filter(c -> c.getInstanceId().equals(uuid))
-                .findFirst().orElse(null);
-        if (currentClient == null) {
-            throw new RuntimeException("Configuration not found ");
-        }
+        OctaneClient currentClient = OctaneSDK.getClientByInstanceId(uuid);
         OctaneSDK.removeClient(currentClient);
     }
 

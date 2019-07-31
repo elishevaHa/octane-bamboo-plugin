@@ -32,7 +32,6 @@ import com.hp.octane.plugins.bamboo.octane.BambooPluginServices;
 import com.hp.octane.plugins.bamboo.octane.MqmProject;
 import com.hp.octane.plugins.bamboo.octane.utils.Utils;
 import org.acegisecurity.acls.Permission;
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +45,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 
@@ -62,16 +60,13 @@ public class TestConnectionResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response testConfiguration(@Context HttpServletRequest request, OctaneConnection model) throws IOException {
-        Map<String, String> result = new HashedMap();
         try {
             OctaneConnectionManager.getInstance().replacePlainPasswordIfRequired(model);
             tryToConnect(model);
-            result.put("status", "ok");
+            return Response.ok().build();
         } catch (IllegalArgumentException e) {
-            result.put("errorMsg", e.getMessage());
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }
-        return Response.ok(result).build();
     }
 
     private void tryToConnect(OctaneConnection dto) throws OctaneConnectivityException {
@@ -115,8 +110,8 @@ public class TestConnectionResource {
                     testedOctaneConfiguration.getClient(),
                     testedOctaneConfiguration.getSecret(),
                     BambooPluginServices.class);
-        } catch (IOException e) {
-            throw  new IllegalArgumentException("sdk exception : " + e.getMessage());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("sdk exception : " + e.getMessage());
         }
     }
 

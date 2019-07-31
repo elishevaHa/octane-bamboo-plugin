@@ -60,7 +60,7 @@ public class ConfigurationRestResource {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response updateSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model, @PathParam("id") String id) {
+    public Response updateConfiguration(@Context HttpServletRequest request, OctaneConnection model, @PathParam("id") String id) {
         log.info("update configuration " + id);
         if (!hasPermissions(request)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
@@ -83,7 +83,7 @@ public class ConfigurationRestResource {
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response addSpaceConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
+    public Response addConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
         if (!hasPermissions(request)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -104,7 +104,7 @@ public class ConfigurationRestResource {
 
     @DELETE
     @Path("/{id}")
-    public Response deleteConnection(@Context HttpServletRequest request, @PathParam("id") String id) {
+    public Response deleteConfiguration(@Context HttpServletRequest request, @PathParam("id") String id) {
         if (octaneConnectionManager.getConnectionById(id) == null) {
             Response.status(Response.Status.NOT_FOUND).entity("No configuration with id " + id).build();
         }
@@ -119,7 +119,7 @@ public class ConfigurationRestResource {
 
     @GET
     @Path("/")
-    public Response readAllData(@Context HttpServletRequest request) {
+    public Response getAllConfigurations(@Context HttpServletRequest request) {
         List<OctaneConnection> newList = new ArrayList();
         octaneConnectionManager.getOctaneConnections().getOctaneConnections().forEach(c -> newList.add(c.cloneForUI()));
         return Response.ok(newList).build();
