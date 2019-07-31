@@ -110,8 +110,10 @@ public class TestConnectionResource {
                     testedOctaneConfiguration.getClient(),
                     testedOctaneConfiguration.getSecret(),
                     BambooPluginServices.class);
+        } catch (OctaneConnectivityException e) {
+            throw new IllegalArgumentException(e.getErrorMessageVal());
         } catch (Exception e) {
-            throw new IllegalArgumentException("sdk exception : " + e.getMessage());
+            throw new IllegalArgumentException("Unexpected exception :" + e.getMessage());
         }
     }
 

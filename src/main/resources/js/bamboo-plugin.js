@@ -178,8 +178,11 @@
     }
 
     function removeSpaceConfiguration(row) {
+        var s = row.model.attributes.location;
+        var n = s.indexOf('#');
+        s = s.substring(0, n != -1 ? n : s.length);
 
-        $("#space-to-delete").text(row.model.attributes.location);
+        $("#space-to-delete").text(s);
 
         AJS.dialog2("#warning-dialog").show();
         AJS.$("#warning-dialog-confirm").click(function (e) {

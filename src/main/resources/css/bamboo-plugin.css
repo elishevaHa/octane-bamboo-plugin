@@ -15,7 +15,7 @@
  */
 
 span.aui-restfultable-throbber.test-connection-status{
-    margin-top: 7px;
+    margin-top: 2px;
     visibility: visible;
     background-image: url(images/wait.gif);
 }

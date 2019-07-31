@@ -63,7 +63,7 @@ public class ConfigurationRestResource {
     public Response updateConfiguration(@Context HttpServletRequest request, OctaneConnection model, @PathParam("id") String id) {
         log.info("update configuration " + id);
         if (!hasPermissions(request)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity("user does not have permission").build();
         }
         if (!model.getId().equals(id)) {
             return Response.status(Response.Status.BAD_REQUEST).entity("invalid request : unexpected id").build();
@@ -85,7 +85,7 @@ public class ConfigurationRestResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addConfiguration(@Context HttpServletRequest request, OctaneConnection model) {
         if (!hasPermissions(request)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity("user dont have permission").build();
         }
         log.info("add configuration");
         if (!model.getId().isEmpty()) {
