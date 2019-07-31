@@ -67,9 +67,9 @@ public class TestConnectionResource {
             OctaneConnectionManager.getInstance().replacePlainPasswordIfRequired(model);
             tryToConnect(model);
             result.put("status", "ok");
-        } catch (OctaneConnectivityException e) {
-            result.put(e.getErrorMessageKey(), e.getErrorMessageVal());
-            return Response.status(Response.Status.CONFLICT).entity(result).build();
+        } catch (IllegalArgumentException e) {
+            result.put("errorMsg", e.getMessage());
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }
         return Response.ok(result).build();
     }
@@ -80,29 +80,29 @@ public class TestConnectionResource {
         String clientSecret = dto.getClientSecret();
         String bambooUser = dto.getBambooUser();
         if (location == null || location.isEmpty()) {
-            throw new OctaneConnectivityException(400, "INVALID", "Location URL is required");
+            throw new IllegalArgumentException("Location URL is required");
         }
         if (clientId == null || clientId.isEmpty()) {
-            throw new OctaneConnectivityException(400, "INVALID", "Client ID is required");
+            throw new IllegalArgumentException("Client ID is required");
         }
 
         if (clientSecret == null || clientSecret.isEmpty()) {
-            throw new OctaneConnectivityException(400, "INVALID", "Client Secret is required");
+            throw new IllegalArgumentException("Client Secret is required");
         }
 
         if (bambooUser == null || bambooUser.isEmpty()) {
-            throw new OctaneConnectivityException(400, "INVALID", "Bamboo user is required");
+            throw new IllegalArgumentException("Bamboo user is required");
         }
         if (!isUserExist(bambooUser)) {
-            throw new OctaneConnectivityException(400, "INVALID", "Bamboo user does not exist");
+            throw new IllegalArgumentException("Bamboo user does not exist");
         }
 
         if (!hasBuildPermission(bambooUser)) {
-            throw new OctaneConnectivityException(403, "PERMISSION", "Bamboo user doesn't have enough permissions");
+            throw new IllegalArgumentException("Bamboo user doesn't have enough permissions");
         }
         MqmProject mqmProject = Utils.parseUiLocation(location);
         if (mqmProject.hasError()) {
-            throw new OctaneConnectivityException(404, "MQM_ERROR", mqmProject.getErrorMsg());
+            throw new IllegalArgumentException(mqmProject.getErrorMsg());
         }
         OctaneConfiguration testedOctaneConfiguration = new OctaneConfiguration(UUID.randomUUID().toString(),
                 mqmProject.getLocation(),
@@ -115,9 +115,8 @@ public class TestConnectionResource {
                     testedOctaneConfiguration.getClient(),
                     testedOctaneConfiguration.getSecret(),
                     BambooPluginServices.class);
-        } catch (IOException e) {///////////delete it!!!!!!!!!!!!!!!!!!
-            OctaneConnectivityException ex = new OctaneConnectivityException(500, "SDK_EXCEPTION", "cannot connect- sdk exception");
-            throw ex;
+        } catch (IOException e) {
+            throw  new IllegalArgumentException("sdk exception : " + e.getMessage());
         }
     }
 

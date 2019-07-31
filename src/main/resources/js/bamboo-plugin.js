@@ -89,12 +89,10 @@
                 dataType: "json",
                 contentType: "application/json"
             }).done(function (result) {
-                console.log("post result", result);
                 refreshRow(result);
-                //reloadTable(spaceTable);
                 AJS.dialog2("#config-dialog").hide();
             }).fail(function (request, status, error) {
-                $("#error-massege").text(request.responseText.toString());
+                $("#error-massege").text(request.responseText);
             });
         });
 
@@ -194,7 +192,10 @@
                 //reloadTable(spaceTable);
                 spaceTable.removeRow(row)
             }).fail(function (request, status, error) {
-                alert(request.responseText);
+                var myFlag = AJS.flag({
+                    type: 'error',
+                    body: request.responseText,
+                });
             });
         });
 
@@ -226,11 +227,6 @@
         } else {
             spaceTable.addRow(model);
         }
-    }
-
-    function reloadTable(table) {
-        table.$tbody.empty();
-        table.fetchInitialResources();
     }
 
     function testConnection(throbber, model) {
