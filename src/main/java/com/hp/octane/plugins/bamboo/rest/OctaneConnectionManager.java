@@ -56,14 +56,14 @@ public class OctaneConnectionManager {
     }
 
     public void addConfiguration(OctaneConnection newConfiguration) {
-        log.info("add new configuration: "+newConfiguration.getLocation());
+        log.info("add new configuration: " + newConfiguration.getLocation());
         addSdkClient(newConfiguration);
         octaneConnectionCollection.addConnection(newConfiguration);
         saveSettings();
     }
 
     public void updateConfiguration(OctaneConnection octaneConnection) {
-        log.info("update configuration: "+octaneConnection.getLocation());
+        log.info("update configuration: " + octaneConnection.getLocation());
         updateClientInSDK(octaneConnection);
         octaneConnectionCollection.updateConnection(octaneConnection);
         saveSettings();
@@ -71,8 +71,8 @@ public class OctaneConnectionManager {
     }
 
     public boolean deleteConfiguration(String id) {
-        OctaneConnection octaneConnection=getConnectionById(id);
-        log.info("delete configuration: "+octaneConnection.getLocation());
+        OctaneConnection octaneConnection = getConnectionById(id);
+        log.info("delete configuration: " + octaneConnection.getLocation());
         removeClientFromSDK(id);
         boolean removed = octaneConnectionCollection.removeConnection(octaneConnection);
         saveSettings();
@@ -131,11 +131,13 @@ public class OctaneConnectionManager {
             PluginSettings settings = settingsFactory.createGlobalSettings();
             if (settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST) == null) {
                 octaneConnectionCollection = new OctaneConnectionCollection();
+
+                ///try to upgrade configuration from previous version
                 OctaneConnection octaneConnection = PreviousVersionsConfigurationHelper_1_7.tryReadConfiguration(settingsFactory);
                 if (octaneConnection != null) {
                     addConfiguration(octaneConnection);
+                    PreviousVersionsConfigurationHelper_1_7.removePreviousVersion(settingsFactory);
                 }
-                PreviousVersionsConfigurationHelper_1_7.removePreviousVersion(settingsFactory);
             } else {
                 String confStr = ((String) settings.get(OctaneConnectionManager.CONFIGURATIONS_LIST));
                 octaneConnectionCollection = JsonHelper.deserialize(confStr, OctaneConnectionCollection.class);

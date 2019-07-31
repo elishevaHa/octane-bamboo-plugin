@@ -83,7 +83,7 @@ public class BambooPluginServices extends CIPluginServices {
     private static final DTOFactory dtoFactory = DTOFactory.getInstance();
     private final String pluginVersion;
     private final String bambooVersion;
-    public static String PLUGIN_KEY = "com.hpe.adm.octane.ciplugins.bamboo-ci-plugin";
+    public final static String PLUGIN_KEY = "com.hpe.adm.octane.ciplugins.bamboo-ci-plugin";
 
     private CachedPlanManager planMan;
 
